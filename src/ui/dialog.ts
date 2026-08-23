@@ -33,16 +33,18 @@ export class QuickNameDialog {
       if (e.key === 'Enter') {
         e.preventDefault();
         this.el.confirm.click();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        this.el.cancel.click();
       }
     });
     this.el.overlay.addEventListener('click', (e) => {
       if (e.target === this.el.overlay) this.el.cancel.click();
     });
-    // 焦点陷阱
+    // 焦点陷阱 + Esc（在弹层级处理，焦点在任一元素上都能关闭）
     this.el.overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.el.cancel.click();
+        return;
+      }
       if (e.key !== 'Tab') return;
       const focusables: HTMLElement[] = [this.el.input, this.el.cancel, this.el.confirm];
       const idx = focusables.indexOf(document.activeElement as HTMLElement);

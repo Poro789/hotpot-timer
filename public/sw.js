@@ -3,6 +3,11 @@
  * - 导航请求 network-first、静态资源 cache-first；
  * - 版本更新：新版本装好后等待用户点击"刷新"（页面端提示），
  *   避免正在计时时被强制切换到新代码。
+ *
+ * 注意：静态资源用 URL 字符串做缓存匹配。
+ * 直接传 fetch 事件里的 Request 对象在 Chromium 上可能因缓存键
+ * 规范化差异而漏配（预缓存条目由 addAll 写入，与文档子资源请求
+ * 的 mode/credentials 不一致），字符串匹配已验证可靠。
  */
 const CACHE = 'hotpot-v1';
 const PRECACHE = [
@@ -57,7 +62,7 @@ self.addEventListener('fetch', (event) => {
 
   // 静态资源：缓存优先，未命中走网络并回填
   event.respondWith(
-    caches.match(req).then(
+    caches.match(req.url).then(
       (hit) =>
         hit ||
         fetch(req).then((res) => {
