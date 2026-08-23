@@ -11,23 +11,25 @@ import { pauseTimer, startTimer, type TimeSource } from './time';
 type Listener = () => void;
 
 export interface NewFood {
+  /** 原始名称（不带 xN 后缀）：份数统计与去重的键 */
   name: string;
   timeSec: number;
   desc: string;
   custom?: boolean;
 }
 
-function makeTimer(id: number, food: NewFood): Timer {
+function makeTimer(
+  id: number,
+  baseName: string,
+  displayName: string,
+  timeSec: number,
+  desc: string,
+  custom?: boolean,
+): Timer {
   return {
     id,
-    food: {
-      baseName: food.name,
-      name: food.name,
-      totalMs: food.timeSec * 1000,
-      desc: food.desc,
-      custom: food.custom,
-    },
-    remainingMs: food.timeSec * 1000,
+    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom },
+    remainingMs: timeSec * 1000,
     state: 'paused',
     endAt: null,
     endAtMono: null,
@@ -84,10 +86,14 @@ export class Store {
 
   /** 目录/我的食材：添加一份并自动开计时 */
   addFoodTimer(food: NewFood, ts: TimeSource): Timer {
-    const timer = makeTimer(this.state.nextTimerId++, {
-      ...food,
-      name: nextDisplayName(this.state.timers, food.name),
-    });
+    const timer = makeTimer(
+      this.state.nextTimerId++,
+      food.name,
+      nextDisplayName(this.state.timers, food.name),
+      food.timeSec,
+      food.desc,
+      food.custom,
+    );
     this.state.timers.push(timer);
     startTimer(timer, ts);
     this.commit(true);
@@ -117,13 +123,14 @@ export class Store {
     }
 
     const timeDesc = seconds < 60 ? `${seconds}秒` : `${Math.floor(seconds / 60)}分钟`;
-    const timer = makeTimer(this.state.nextTimerId++, {
+    const timer = makeTimer(
+      this.state.nextTimerId++,
       name,
-      timeSec: seconds,
-      desc: `自定义时长${timeDesc}`,
-      custom: true,
-    });
-    timer.food.name = nextDisplayName(this.state.timers, name);
+      nextDisplayName(this.state.timers, name),
+      seconds,
+      `自定义时长${timeDesc}`,
+      true,
+    );
     this.state.timers.push(timer);
     startTimer(timer, ts);
     this.commit(true);

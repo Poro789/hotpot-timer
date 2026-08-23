@@ -48,10 +48,61 @@ export function migrate(raw: unknown): PersistedState | null {
     case 2:
       return migrateV2(o);
     case 3:
-      return o as unknown as PersistedState;
+      return sanitizeV3(o);
     default:
       return null; // 来自更新版本的存档：不降级，按空状态处理
   }
+}
+
+/** v3 存档：结构校验（timers 形状损坏 -> 整体拒收；个别坏条目 -> 过滤） */
+function sanitizeV3(o: Record<string, unknown>): PersistedState | null {
+  if (!Array.isArray(o.timers)) return null;
+  const timers = (o.timers as PersistedTimer[]).filter(validPersistedTimer);
+  return {
+    version: STATE_VERSION,
+    timers,
+    myFoods: parseMyFoods(o.myFoods),
+    settings: parseSettings(o.settings),
+    nextTimerId: typeof o.nextTimerId === 'number' ? o.nextTimerId : timers.length + 1,
+    customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
+  };
+}
+
+function validPersistedTimer(t: PersistedTimer): boolean {
+  return (
+    typeof t?.id === 'number' &&
+    typeof t?.food?.name === 'string' &&
+    t.food.name.length > 0 &&
+    typeof t?.food?.totalMs === 'number' &&
+    t.food.totalMs > 0 &&
+    typeof t?.remainingMs === 'number' &&
+    (t.state === 'running' || t.state === 'paused' || t.state === 'done')
+  );
+}
+
+/** 兼容 v2（time）与 v3（timeSec）两种形状，保证迁移幂等 */
+function parseMyFoods(raw: unknown): MyFood[] {
+  return Array.isArray(raw)
+    ? (raw as Array<{ name?: unknown; time?: unknown; timeSec?: unknown }>)
+        .filter(
+          (f) =>
+            typeof f?.name === 'string' &&
+            f.name.trim().length > 0 &&
+            (typeof f.timeSec === 'number'
+              ? f.timeSec > 0
+              : typeof f.time === 'number' && f.time > 0),
+        )
+        .map((f) => ({
+          name: (f.name as string).trim(),
+          timeSec: typeof f.timeSec === 'number' ? f.timeSec : (f.time as number),
+        }))
+    : [];
+}
+
+function parseSettings(raw: unknown): Settings {
+  const settings: Settings = { ...DEFAULT_SETTINGS };
+  if (typeof raw === 'object' && raw !== null) Object.assign(settings, raw);
+  return settings;
 }
 
 function migrateV2(o: Record<string, unknown>): PersistedState {
@@ -81,22 +132,11 @@ function migrateV2(o: Record<string, unknown>): PersistedState {
     });
   }
 
-  const myFoods: MyFood[] = Array.isArray(o.myFoods)
-    ? (o.myFoods as Array<{ name?: unknown; time?: unknown }>)
-        .filter((f) => typeof f?.name === 'string' && typeof f?.time === 'number' && f.time > 0)
-        .map((f) => ({ name: f.name as string, timeSec: f.time as number }))
-    : [];
-
-  const settings: Settings = { ...DEFAULT_SETTINGS };
-  if (typeof o.settings === 'object' && o.settings !== null) {
-    Object.assign(settings, o.settings);
-  }
-
   return {
     version: STATE_VERSION,
     timers,
-    myFoods,
-    settings,
+    myFoods: parseMyFoods(o.myFoods),
+    settings: parseSettings(o.settings),
     nextTimerId: typeof o.nextTimerId === 'number' ? o.nextTimerId : timers.length + 1,
     customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
   };
