@@ -1,8 +1,8 @@
 /**
- * 食材目录（数据源：data/food_catalog.csv）
+ * 食材目录（由 scripts/data-gen.mjs 从 data/food_catalog.csv 生成）
  *
- * 注意：本文件后续由 scripts/data-gen.mjs 从 CSV 生成（含 schema 校验）。
- * 修改食材请编辑 CSV 后运行 `npm run data:gen`，不要手改本文件。
+ * 本文件为生成物，请勿手改。
+ * 修改食材：编辑 CSV 后运行 `npm run data:gen`。
  */
 
 export type Category = 'meat' | 'seafood' | 'vegetable' | 'bean' | 'ball' | 'other';

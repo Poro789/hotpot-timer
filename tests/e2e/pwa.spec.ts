@@ -5,10 +5,7 @@ test.describe('PWA：离线与 Service Worker', () => {
     await page.goto('/');
     await expect
       .poll(
-        async () =>
-          page.evaluate(() =>
-            navigator.serviceWorker.getRegistration().then((r) => !!r),
-          ),
+        async () => page.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => !!r)),
         { timeout: 15_000 },
       )
       .toBe(true);
