@@ -63,7 +63,10 @@ function sanitizeV3(o: Record<string, unknown>): PersistedState | null {
     timers,
     myFoods: parseMyFoods(o.myFoods),
     settings: parseSettings(o.settings),
-    nextTimerId: typeof o.nextTimerId === 'number' ? o.nextTimerId : timers.length + 1,
+    nextTimerId:
+      typeof o.nextTimerId === 'number'
+        ? o.nextTimerId
+        : (timers.length > 0 ? Math.max(...timers.map((t) => t.id)) : 0) + 1,
     customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
   };
 }
@@ -99,10 +102,20 @@ function parseMyFoods(raw: unknown): MyFood[] {
     : [];
 }
 
+/** 设置项严格消毒：类型不符/越界一律回退默认值（损坏存档不能产生半真半假的状态） */
 function parseSettings(raw: unknown): Settings {
-  const settings: Settings = { ...DEFAULT_SETTINGS };
-  if (typeof raw === 'object' && raw !== null) Object.assign(settings, raw);
-  return settings;
+  const s: Settings = { ...DEFAULT_SETTINGS };
+  if (typeof raw !== 'object' || raw === null) return s;
+  const o = raw as Record<string, unknown>;
+  if (typeof o.sound === 'boolean') s.sound = o.sound;
+  if (typeof o.vibrate === 'boolean') s.vibrate = o.vibrate;
+  if (typeof o.systemNotify === 'boolean') s.systemNotify = o.systemNotify;
+  if (typeof o.installDismissed === 'boolean') s.installDismissed = o.installDismissed;
+  // 越界音量视为脏数据（回退默认 0.3），而不是静默 clamp 成 0 或 1
+  if (typeof o.volume === 'number' && o.volume >= 0 && o.volume <= 1) {
+    s.volume = o.volume;
+  }
+  return s;
 }
 
 function migrateV2(o: Record<string, unknown>): PersistedState {
@@ -137,7 +150,10 @@ function migrateV2(o: Record<string, unknown>): PersistedState {
     timers,
     myFoods: parseMyFoods(o.myFoods),
     settings: parseSettings(o.settings),
-    nextTimerId: typeof o.nextTimerId === 'number' ? o.nextTimerId : timers.length + 1,
+    nextTimerId:
+      typeof o.nextTimerId === 'number'
+        ? o.nextTimerId
+        : (timers.length > 0 ? Math.max(...timers.map((t) => t.id)) : 0) + 1,
     customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
   };
 }

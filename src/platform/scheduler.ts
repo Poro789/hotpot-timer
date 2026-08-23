@@ -69,7 +69,7 @@ export class Scheduler {
     const delay = Math.max(0, deadline - Date.now());
     const fire = (): void => {
       this.fallbackId = null;
-      this.hooks.onWake();
+      this.wake();
     };
     try {
       const worker = new Worker(`${import.meta.env.BASE_URL}timer-worker.js`);
@@ -77,7 +77,7 @@ export class Scheduler {
         if (e.data?.type === 'fire') {
           worker.terminate();
           if (this.worker === worker) this.worker = null;
-          this.hooks.onWake();
+          this.wake();
         }
       };
       worker.onerror = () => {
@@ -90,6 +90,16 @@ export class Scheduler {
     } catch {
       this.fallbackId = window.setTimeout(fire, delay);
     }
+  }
+
+  /**
+   * 后台到期唤醒：先结算（hooks.onWake），再按当前可见性恢复驱动。
+   * 唤醒瞬间页面可能已回前台（rAF 已停摆且无人重启）——
+   * 不恢复的话运行中的计时会冻结，直到下次 visibilitychange。
+   */
+  private wake(): void {
+    this.hooks.onWake();
+    if (typeof document !== 'undefined' && !document.hidden) this.startRaf();
   }
 
   private cancelBackground(): void {

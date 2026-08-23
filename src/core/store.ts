@@ -44,6 +44,14 @@ export function nextDisplayName(timers: readonly Timer[], baseName: string): str
 }
 
 /**
+ * 展示顺序：已到点的置顶（最需要被看到），其余保持添加顺序（稳定排序）。
+ * 纯函数，不改状态。
+ */
+export function displayOrder(timers: readonly Timer[]): Timer[] {
+  return [...timers].sort((a, b) => Number(b.state === 'done') - Number(a.state === 'done'));
+}
+
+/**
  * 应用状态仓库：单向数据流。
  * - 所有变更通过意图方法进入，统一 commit 通知订阅者；
  * - structureVersion 仅在"卡片结构"变化（增/删/重置/水合）时递增，
@@ -144,6 +152,7 @@ export class Store {
       pauseTimer(t, ts);
     } else if (t.state === 'done') {
       t.remainingMs = t.food.totalMs;
+      t.missed = false; // "加一份"重新开始：补报标记随之失效
       startTimer(t, ts);
     } else {
       startTimer(t, ts);
@@ -165,7 +174,11 @@ export class Store {
     this.commit(true);
   }
 
-  /** 调度器判定到期：置为完成（不触发结构重建，渲染层单独更新卡片状态） */
+  /**
+   * 调度器判定到期：置为完成。
+   * 完成会改变展示顺序（到点条目置顶），因此触发结构重建；
+   * 列表通常只有个位数条目，重建开销可忽略。
+   */
   markDone(ids: readonly number[]): void {
     let changed = false;
     for (const id of ids) {
@@ -178,7 +191,7 @@ export class Store {
       t.missed = false;
       changed = true;
     }
-    if (changed) this.commit(false);
+    if (changed) this.commit(true);
   }
 
   // ---------- 我的食材 ----------

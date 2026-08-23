@@ -32,7 +32,6 @@ export function collectElements() {
     installDismiss: req<HTMLButtonElement>('install-dismiss'),
     updateBanner: req<HTMLDivElement>('update-banner'),
     updateBtn: req<HTMLButtonElement>('update-btn'),
-    timerSection: req<HTMLElement>('timer-section'),
     setSound: req<HTMLButtonElement>('set-sound'),
     setVibrate: req<HTMLButtonElement>('set-vibrate'),
     setNotify: req<HTMLButtonElement>('set-notify'),

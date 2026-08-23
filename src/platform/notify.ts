@@ -1,11 +1,24 @@
 function supported(): boolean {
-  return 'Notification' in window;
+  return typeof window !== 'undefined' && 'Notification' in window;
 }
 
-/** 在用户手势上下文中请求权限（仅 default 时） */
-export function requestNotifyPermission(): void {
-  if (supported() && Notification.permission === 'default') {
-    void Notification.requestPermission().catch(() => {});
+/** 当前平台是否支持系统通知（iOS Safari 等不支持） */
+export function notifySupported(): boolean {
+  return supported();
+}
+
+/**
+ * 在用户手势上下文中请求权限并返回结果（仅 default 时真正弹窗；
+ * 已授权/已拒绝直接返回当前状态，不重复打扰）。
+ */
+export async function requestNotifyPermission(): Promise<'granted' | 'denied'> {
+  if (!supported()) return 'denied';
+  if (Notification.permission !== 'default') return Notification.permission;
+  try {
+    const result = await Notification.requestPermission();
+    return result === 'granted' ? 'granted' : 'denied';
+  } catch {
+    return 'denied';
   }
 }
 

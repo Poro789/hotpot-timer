@@ -55,7 +55,8 @@ describe('formatMs', () => {
   });
   it('超过一分钟显示分秒', () => {
     expect(formatMs(90_000)).toBe('1分30秒');
-    expect(formatMs(600_000)).toBe('10分0秒');
+    expect(formatMs(600_000)).toBe('10分');
+    expect(formatMs(120_000)).toBe('2分');
   });
 });
 

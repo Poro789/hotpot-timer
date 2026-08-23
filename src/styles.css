@@ -169,13 +169,21 @@ body {
 /* ============ 全局控制按钮 ============ */
 .global-controls {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 14px;
   justify-content: center;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+/* 三键等宽平分一行，文字永不折行 */
+.global-controls .btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .btn {
-  padding: 11px 22px;
+  padding: 11px 14px;
   border: none;
   border-radius: 10px;
   font-size: 15px;
@@ -187,6 +195,7 @@ body {
     opacity 0.2s ease;
   min-width: 96px;
   min-height: 44px;
+  white-space: nowrap;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -999,28 +1008,60 @@ body {
   opacity: 0.75;
 }
 
-/* ============ 守锅模式（全屏） ============ */
-body:fullscreen .timer-section {
-  margin: 0;
-  border-radius: 0;
+/* ============ 守锅模式（整页全屏：只留计时，列表可滚动） ============
+   注意：必须与 JS 的 document.body.requestFullscreen() 配套——
+   完成面板/脉冲层/弹层都在 .container 内，section 级全屏时不可见。 */
+body:fullscreen {
+  padding: 0;
+}
+
+body:fullscreen .container {
+  max-width: 640px;
   height: 100vh;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  padding: 20px 16px;
+  overflow: hidden;
+}
+
+body:fullscreen .header {
+  padding: 16px 16px 4px;
+}
+
+body:fullscreen .header .subtitle,
+body:fullscreen .settings-row {
+  display: none;
+}
+
+body:fullscreen .timer-section {
+  flex: 1;
+  min-height: 0;
+  margin: 8px 12px 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 14px 16px;
 }
 
 body:fullscreen .global-controls {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 body:fullscreen .timers-container {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   align-content: start;
+  padding-bottom: 8px;
 }
 
 body:fullscreen .timer-card {
   min-height: 170px;
-  padding: 18px 14px 14px;
+  padding: 16px 14px 14px;
 }
 
 body:fullscreen .timer-food-name {
@@ -1028,12 +1069,24 @@ body:fullscreen .timer-food-name {
 }
 
 body:fullscreen .timer-time {
-  font-size: 42px;
+  font-size: 40px;
 }
 
 body:fullscreen .btn {
   font-size: 16px;
   min-height: 48px;
+}
+
+body:fullscreen .quick-time-section,
+body:fullscreen .food-section,
+body:fullscreen .footer {
+  display: none;
+}
+
+/* 守锅模式下"时间到"面板更醒目（占位更高，遮在列表上） */
+body:fullscreen .done-banner {
+  bottom: 0;
+  max-width: none;
 }
 
 /* ============ 响应式 ============ */

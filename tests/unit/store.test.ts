@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Store, defaultState, nextDisplayName } from '../../src/core/store';
+import { Store, defaultState, displayOrder, nextDisplayName } from '../../src/core/store';
 import type { TimeSource } from '../../src/core/time';
 import type { Timer } from '../../src/core/types';
 
@@ -150,7 +150,57 @@ describe('structureVersion（渲染重建触发器）', () => {
     expect(store.structureVersion).toBe(v0);
     store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
     expect(store.structureVersion).toBe(v0 + 1);
+  });
+  it('markDone 递增（到点条目置顶依赖重建）', () => {
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    const v0 = store.structureVersion;
     store.markDone([store.snapshot.timers[0]!.id]);
     expect(store.structureVersion).toBe(v0 + 1);
+  });
+  it('markDone 幂等：重复调用不再递增', () => {
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    const id = store.snapshot.timers[0]!.id;
+    store.markDone([id]);
+    const v0 = store.structureVersion;
+    store.markDone([id]);
+    expect(store.structureVersion).toBe(v0);
+  });
+});
+
+describe('displayOrder（到点条目置顶）', () => {
+  it('完成条目排在最前，其余保持原序（稳定）', () => {
+    const a = timerWith('毛肚', '毛肚', { id: 1, state: 'running' });
+    const b = timerWith('虾', '虾', { id: 2 });
+    const c = timerWith('蟹', '蟹', { id: 3, state: 'done' });
+    const d = timerWith('蛙', '蛙', { id: 4, state: 'done' });
+    expect(displayOrder([a, b, c, d]).map((t) => t.id)).toEqual([3, 4, 1, 2]);
+  });
+  it('全未完成时顺序不变', () => {
+    const a = timerWith('毛肚', '毛肚', { id: 1 });
+    const b = timerWith('虾', '虾', { id: 2 });
+    expect(displayOrder([a, b]).map((t) => t.id)).toEqual([1, 2]);
+  });
+  it('是纯函数：不修改原数组', () => {
+    const a = timerWith('毛肚', '毛肚', { id: 1, state: 'done' });
+    const b = timerWith('虾', '虾', { id: 2 });
+    const src = [b, a];
+    displayOrder(src);
+    expect(src.map((t) => t.id)).toEqual([2, 1]);
+  });
+});
+
+describe('missed 标记生命周期', () => {
+  it('补报的完成条目"加一份"后清除 missed', () => {
+    const store = new Store(defaultState());
+    const t = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    t.state = 'done';
+    t.remainingMs = 0;
+    t.missed = true; // 模拟离开期间到点
+    const id = store.snapshot.timers[0]!.id;
+    store.toggleTimer(id, ts); // 加一份
+    expect(store.getTimer(id)?.missed).toBe(false);
+    expect(store.getTimer(id)?.state).toBe('running');
   });
 });

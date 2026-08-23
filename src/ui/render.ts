@@ -1,4 +1,4 @@
-import type { Store } from '../core/store';
+import { displayOrder, type Store } from '../core/store';
 import type { Timer } from '../core/types';
 import { formatMs } from '../core/time';
 import { CATEGORIES, foodDatabase, type Category } from '../core/catalog';
@@ -15,9 +15,9 @@ export type CategoryTab = Category | 'myfoods';
 
 /**
  * 渲染层：
- * - 计时器卡片只在 structureVersion 变化时重建（增/删/重置/水合）；
- * - 时间文本由调度循环通过 updateTime 直写（每帧，不重建 DOM）；
- * - 卡片状态（running/completed 类名与按钮文案）由 updateCardState 单独刷新。
+ * - 计时器卡片在 structureVersion 变化时重建（增/删/重置/水合）；
+ * - 到点流程显式调用 forceRebuildTimers（到点条目置顶 + 状态样式）；
+ * - 时间文本由调度循环通过 updateTime 直写（每帧，不重建 DOM）。
  */
 export class Render {
   private refs = new Map<number, TimerRefs>();
@@ -34,11 +34,25 @@ export class Render {
     const v = this.store.structureVersion;
     if (v === this.structuralSeen) return;
     this.structuralSeen = v;
+    this.rebuildTimers();
+  }
 
+  /**
+   * 无条件重建计时区域。
+   * 到点流程专用：tickTimers/markDone 在前台路径上通常不产生结构版本变化
+   * （状态由 tick 直接置位），到点置顶需要显式重建一次。
+   */
+  forceRebuildTimers(): void {
+    this.structuralSeen = this.store.structureVersion;
+    this.rebuildTimers();
+  }
+
+  private rebuildTimers(): void {
     this.el.timersContainer.querySelectorAll('.timer-card').forEach((n) => n.remove());
     this.refs.clear();
 
-    const timers = this.store.snapshot.timers;
+    // 到点条目置顶（最需要被看到），其余保持添加顺序
+    const timers = displayOrder(this.store.snapshot.timers);
     if (timers.length === 0) {
       this.el.emptyState.style.display = 'block';
     } else {
@@ -74,19 +88,10 @@ export class Render {
     return card;
   }
 
-  /** 每帧只写时间文本（O(1)，无 DOM 查询） */
+  /** 每帧只写时间文本（O(1)，无 DOM 查询）；仅运行中卡片 */
   updateTime(id: number, ms: number): void {
     const ref = this.refs.get(id);
     if (ref) ref.time.textContent = formatMs(ms);
-  }
-
-  /** 状态变化后刷新单卡（类名 + 按钮文案） */
-  updateCardState(id: number): void {
-    const t = this.store.getTimer(id);
-    const ref = this.refs.get(id);
-    if (!t || !ref) return;
-    this.applyCardState(t, ref);
-    ref.time.textContent = formatMs(t.remainingMs);
   }
 
   private applyCardState(t: Timer, ref: TimerRefs): void {
@@ -94,6 +99,8 @@ export class Render {
     ref.card.classList.toggle('completed', t.state === 'done');
     ref.toggle.textContent =
       t.state === 'done' ? '加一份' : t.state === 'running' ? '暂停' : '继续';
+    // 完成卡显示"时间到"而不是"0秒"；运行中的卡由 rAF 每帧直写
+    ref.time.textContent = t.state === 'done' ? '时间到' : formatMs(t.remainingMs);
   }
 
   updateGlobalButtons(): void {

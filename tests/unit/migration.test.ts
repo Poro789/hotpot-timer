@@ -119,4 +119,46 @@ describe('migrate（持久化迁移链）', () => {
     expect(s!.nextTimerId).toBe(1);
     expect(s!.customFoodCounter).toBe(1);
   });
+
+  it('nextTimerId 缺失时取最大 id + 1（不与现有 id 碰撞）', () => {
+    const s = migrate({
+      timers: [
+        { id: 5, food: { name: '虾', time: 60 }, remainingTime: 30, isRunning: false, endAt: null },
+        {
+          id: 9,
+          food: { name: '蟹', time: 120 },
+          remainingTime: 60,
+          isRunning: false,
+          endAt: null,
+        },
+      ],
+    });
+    expect(s!.nextTimerId).toBe(10);
+  });
+
+  it('settings 严格消毒：脏值回退默认，不产生半真半假状态', () => {
+    const s = migrate({
+      version: 3,
+      timers: [],
+      settings: { sound: 'no', vibrate: 1, systemNotify: null, volume: 42, extra: 'x' },
+    });
+    expect(s!.settings).toEqual({ ...DEFAULT_SETTINGS }); // 全部回退
+  });
+
+  it('settings 合法值保留；volume 越界视为脏数据回退默认', () => {
+    const s = migrate({
+      version: 3,
+      timers: [],
+      settings: { sound: false, vibrate: false, systemNotify: true, volume: 0.7 },
+    });
+    expect(s!.settings).toEqual({
+      sound: false,
+      vibrate: false,
+      systemNotify: true,
+      volume: 0.7,
+      installDismissed: false,
+    });
+    const bad = migrate({ version: 3, timers: [], settings: { volume: 1.5 } });
+    expect(bad!.settings.volume).toBe(DEFAULT_SETTINGS.volume);
+  });
 });

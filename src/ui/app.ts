@@ -61,8 +61,10 @@ export function boot(): void {
   function handleDue(ids: readonly number[], opts: AlarmOptions): void {
     if (ids.length === 0) return;
     store.markDone(ids);
+    // 到点流程显式重建：卡片转"时间到" + 到点条目置顶
+    // （tick 已直接置位 state，markDone 在此路径上通常不产生结构变更）
+    render.forceRebuildTimers();
     alarm.handleDue(ids, opts);
-    for (const id of ids) render.updateCardState(id);
     void saveState(store.snapshot);
   }
 
@@ -105,7 +107,8 @@ export function boot(): void {
     // 强制重排，确保连续触发时动画能重新播放
     void el.flashOverlay.offsetWidth;
     el.flashOverlay.classList.add('flashing');
-    window.setTimeout(() => el.flashOverlay.classList.remove('flashing'), 1800);
+    // 动画为 1.1s × 3 = 3.3s，留足余量再撤类（此前 1800ms 会砍掉后半段）
+    window.setTimeout(() => el.flashOverlay.classList.remove('flashing'), 3400);
   }
 
   // ---------- 意图接线 ----------
@@ -205,20 +208,24 @@ export function boot(): void {
     toast.show('已删除所有计时器');
   });
 
-  // 守锅模式（全屏 + 保持亮屏）
+  // 守锅模式（整页全屏 + 保持亮屏）。
+  // 必须全屏 body 而不是 timer-section：完成面板/脉冲层/弹层都在
+  // section 之外，section 全屏时这些提醒全部不可见。
   el.watchModeBtn.addEventListener('click', async () => {
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       } else {
-        await el.timerSection.requestFullscreen();
+        await document.body.requestFullscreen();
       }
     } catch {
       toast.show('当前浏览器不支持全屏');
     }
   });
   document.addEventListener('fullscreenchange', () => {
-    void setWakeLock(!!document.fullscreenElement);
+    const fs = !!document.fullscreenElement;
+    el.watchModeBtn.textContent = fs ? '✕ 退出守锅' : '⛶ 守锅';
+    void setWakeLock(fs);
   });
 
   // 快捷计时
@@ -239,7 +246,10 @@ export function boot(): void {
   });
 
   // 设置 / PWA
-  initSettings(store, el, { onRequestNotify: () => requestNotifyPermission() });
+  initSettings(store, el, {
+    toast: (m) => toast.show(m),
+    onRequestNotify: () => requestNotifyPermission(),
+  });
   initPwa(store, el, { toast: (m) => toast.show(m) });
 
   // ---------- 订阅：持久化 + 视图 + 调度 + 亮屏 ----------
@@ -276,7 +286,8 @@ export function boot(): void {
     'pointerdown',
     () => {
       unlockAudio();
-      if (store.snapshot.settings.systemNotify) requestNotifyPermission();
+      // 静默确保通知权限（内部仅在 default 状态才真正弹窗）
+      if (store.snapshot.settings.systemNotify) void requestNotifyPermission();
       alarm.onUserGesture();
     },
     { passive: true },
