@@ -1,0 +1,33 @@
+{
+  "name": "hotpot-timer",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "川渝火锅涮煮计时器 — 点一下食材，到点必响",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:assets": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "data:gen": "node scripts/data-gen.mjs",
+    "data:check": "node scripts/data-gen.mjs --check",
+    "icons": "node scripts/gen-icons.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@playwright/test": "^1.52.0",
+    "eslint": "^9.30.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.35.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

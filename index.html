@@ -1,113 +1,200 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#14100d">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="川渝火锅涮煮计时器：点一下食材，到点必响。" />
+    <meta name="theme-color" content="#14100d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="火锅计时" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self';"
+    />
     <title>川渝火锅涮煮计时器</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="foodDatabase.js"></script>
-</head>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <!-- 顶部标题 -->
-        <header class="header">
-            <h1>🔥 火锅计时器</h1>
-            <p class="subtitle">川渝风味 · 精准涮煮</p>
-        </header>
+      <!-- 顶部标题 + 提醒设置 -->
+      <header class="header">
+        <h1>🔥 火锅计时器</h1>
+        <p class="subtitle">川渝风味 · 精准涮煮</p>
+        <div class="settings-row" role="group" aria-label="提醒设置">
+          <button id="set-sound" class="setting-btn" type="button" aria-pressed="true">
+            🔊 声音
+          </button>
+          <button id="set-vibrate" class="setting-btn" type="button" aria-pressed="true">
+            📳 震动
+          </button>
+          <button id="set-notify" class="setting-btn" type="button" aria-pressed="true">
+            🔔 通知
+          </button>
+          <label class="volume-wrap"
+            >音量
+            <input
+              type="range"
+              id="set-volume"
+              min="0"
+              max="100"
+              value="30"
+              step="5"
+              aria-label="提示音音量"
+            />
+          </label>
+        </div>
+      </header>
 
-        <!-- 计时器显示区域 -->
-        <section class="timer-section">
-            <div class="global-controls">
-                <button id="pause-all-btn" class="btn btn-secondary" disabled>全部暂停</button>
-                <button id="delete-all-btn" class="btn btn-danger" disabled>全部删除</button>
-            </div>
-            <div class="timers-container" id="timers-container">
-                <!-- 计时器卡片将动态添加到这里 -->
-                <div class="empty-state" id="empty-state">
-                    <p>请选择食材添加到计时列表</p>
-                </div>
-            </div>
-        </section>
+      <!-- 计时器显示区域 -->
+      <section class="timer-section" id="timer-section">
+        <div class="global-controls">
+          <button id="pause-all-btn" class="btn btn-secondary" disabled>全部暂停</button>
+          <button id="delete-all-btn" class="btn btn-danger" disabled>全部删除</button>
+          <button id="watch-mode-btn" class="btn btn-ghost" title="全屏守锅模式">⛶ 守锅</button>
+        </div>
+        <div class="timers-container" id="timers-container" aria-label="计时列表">
+          <!-- 计时器卡片将动态添加到这里 -->
+          <div class="empty-state" id="empty-state">
+            <p>请选择食材添加到计时列表</p>
+          </div>
+        </div>
+      </section>
 
-        <!-- 快捷时长选择 -->
-        <section class="quick-time-section">
-            <h2>⏱️ 快速计时（输入名称）</h2>
-            <div class="quick-time-grid">
-                <button class="quick-time-btn" data-time="15">15秒</button>
-                <button class="quick-time-btn" data-time="30">30秒</button>
-                <button class="quick-time-btn" data-time="45">45秒</button>
-                <button class="quick-time-btn" data-time="60">1分钟</button>
-                <button class="quick-time-btn" data-time="120">2分钟</button>
-                <button class="quick-time-btn" data-time="180">3分钟</button>
-                <button class="quick-time-btn" data-time="300">5分钟</button>
-                <button class="quick-time-btn" data-time="600">10分钟</button>
-            </div>
-        </section>
+      <!-- "时间到"确认面板（合并展示未确认的到期条目） -->
+      <div class="done-banner" id="done-banner" hidden></div>
 
-        <!-- 食材选择区域 -->
-        <section class="food-section">
-            <h2>🥘 选择食材</h2>
+      <!-- 快捷时长选择 -->
+      <section class="quick-time-section">
+        <h2>⏱️ 快速计时（输入名称）</h2>
+        <div class="quick-time-grid">
+          <button class="quick-time-btn" data-time="15">15秒</button>
+          <button class="quick-time-btn" data-time="30">30秒</button>
+          <button class="quick-time-btn" data-time="45">45秒</button>
+          <button class="quick-time-btn" data-time="60">1分钟</button>
+          <button class="quick-time-btn" data-time="120">2分钟</button>
+          <button class="quick-time-btn" data-time="180">3分钟</button>
+          <button class="quick-time-btn" data-time="300">5分钟</button>
+          <button class="quick-time-btn" data-time="600">10分钟</button>
+        </div>
+      </section>
 
-            <!-- 分类标签 -->
-            <div class="category-tabs">
-                <button class="tab-btn active" data-category="meat">肉类</button>
-                <button class="tab-btn" data-category="seafood">海鲜</button>
-                <button class="tab-btn" data-category="vegetable">蔬菜</button>
-                <button class="tab-btn" data-category="bean">豆制品</button>
-                <button class="tab-btn" data-category="ball">丸类</button>
-                <button class="tab-btn" data-category="other">其他</button>
-                <button class="tab-btn tab-myfoods" data-category="myfoods">⭐ 我的食材</button>
-            </div>
+      <!-- 食材选择区域 -->
+      <section class="food-section">
+        <h2>🥘 选择食材</h2>
 
-            <!-- 自定义食材添加面板（仅"我的食材"标签页显示） -->
-            <div class="my-foods-panel" id="my-foods-panel">
-                <input type="text" id="custom-food-name" placeholder="食材名称，如：鲜鸭血" maxlength="20">
-                <div class="custom-time-chips" id="custom-time-chips">
-                    <button class="time-chip" data-time="15">15秒</button>
-                    <button class="time-chip" data-time="30">30秒</button>
-                    <button class="time-chip" data-time="60">1分钟</button>
-                    <button class="time-chip" data-time="120">2分钟</button>
-                    <button class="time-chip" data-time="180">3分钟</button>
-                    <button class="time-chip" data-time="300">5分钟</button>
-                </div>
-                <button class="btn-add-food" id="add-custom-food-btn">添加食材</button>
-            </div>
-
-            <!-- 食材列表 -->
-            <div class="food-grid" id="food-grid">
-                <!-- 食材卡片将通过JavaScript动态生成 -->
-            </div>
-        </section>
-
-        <!-- 快速计时：食材名称输入弹层（替代系统 prompt） -->
-        <div class="quick-name-overlay" id="quick-name-overlay" hidden>
-            <div class="quick-name-modal" role="dialog" aria-modal="true" aria-labelledby="quick-name-title">
-                <h3 id="quick-name-title">🥘 输入食材名称</h3>
-                <p class="quick-name-hint" id="quick-name-hint"></p>
-                <input type="text" id="quick-name-input" placeholder="食材名称，如：鲜鸭血" maxlength="20" autocomplete="off">
-                <div class="quick-name-actions">
-                    <button class="btn btn-secondary" id="quick-name-cancel" type="button">取消</button>
-                    <button class="btn btn-primary" id="quick-name-confirm" type="button">开始计时</button>
-                </div>
-            </div>
+        <!-- 分类标签 -->
+        <div class="category-tabs" role="tablist" aria-label="食材分类">
+          <button class="tab-btn active" data-category="meat" role="tab" aria-selected="true">
+            肉类
+          </button>
+          <button class="tab-btn" data-category="seafood" role="tab" aria-selected="false">
+            海鲜
+          </button>
+          <button class="tab-btn" data-category="vegetable" role="tab" aria-selected="false">
+            蔬菜
+          </button>
+          <button class="tab-btn" data-category="bean" role="tab" aria-selected="false">
+            豆制品
+          </button>
+          <button class="tab-btn" data-category="ball" role="tab" aria-selected="false">
+            丸类
+          </button>
+          <button class="tab-btn" data-category="other" role="tab" aria-selected="false">
+            其他
+          </button>
+          <button
+            class="tab-btn tab-myfoods"
+            data-category="myfoods"
+            role="tab"
+            aria-selected="false"
+          >
+            ⭐ 我的食材
+          </button>
         </div>
 
-        <!-- 提示信息 -->
-        <div class="toast" id="toast"></div>
+        <!-- 自定义食材添加面板（仅"我的食材"标签页显示） -->
+        <div class="my-foods-panel" id="my-foods-panel">
+          <input
+            type="text"
+            id="custom-food-name"
+            placeholder="食材名称，如：鲜鸭血"
+            maxlength="20"
+          />
+          <div class="custom-time-chips" id="custom-time-chips">
+            <button class="time-chip" data-time="15">15秒</button>
+            <button class="time-chip" data-time="30">30秒</button>
+            <button class="time-chip" data-time="60">1分钟</button>
+            <button class="time-chip" data-time="120">2分钟</button>
+            <button class="time-chip" data-time="180">3分钟</button>
+            <button class="time-chip" data-time="300">5分钟</button>
+          </div>
+          <button class="btn-add-food" id="add-custom-food-btn">添加食材</button>
+        </div>
 
-        <!-- 页脚标语 -->
-        <footer class="footer">
-            <p>🔥 沸腾时刻 · 倾情呈现</p>
-        </footer>
+        <!-- 食材列表 -->
+        <div class="food-grid" id="food-grid">
+          <!-- 食材卡片将通过JavaScript动态生成 -->
+        </div>
+      </section>
 
-        <!-- 时间到全屏闪光提醒层 -->
-        <div class="flash-overlay" id="flash-overlay"></div>
+      <!-- 快速计时：食材名称输入弹层 -->
+      <div class="quick-name-overlay" id="quick-name-overlay" hidden>
+        <div
+          class="quick-name-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quick-name-title"
+        >
+          <h3 id="quick-name-title">🥘 输入食材名称</h3>
+          <p class="quick-name-hint" id="quick-name-hint"></p>
+          <input
+            type="text"
+            id="quick-name-input"
+            placeholder="食材名称，如：鲜鸭血"
+            maxlength="20"
+            autocomplete="off"
+          />
+          <div class="quick-name-actions">
+            <button class="btn btn-secondary" id="quick-name-cancel" type="button">取消</button>
+            <button class="btn btn-primary" id="quick-name-confirm" type="button">开始计时</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PWA：安装引导 / 版本更新 提示条 -->
+      <div class="install-banner" id="install-banner" hidden>
+        <span>📲 添加到主屏幕，离线也能用</span>
+        <span class="install-banner-actions">
+          <button id="install-btn" class="btn-small" type="button">安装</button>
+          <button id="install-dismiss" class="btn-small" type="button" aria-label="关闭提示">
+            ✕
+          </button>
+        </span>
+      </div>
+      <div class="update-banner" id="update-banner" hidden>
+        <button id="update-btn" class="btn-small" type="button">🆕 发现新版本，点击刷新</button>
+      </div>
+
+      <!-- 提示信息 -->
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <!-- 屏幕阅读器专用播报（到点提醒） -->
+      <div class="visually-hidden" id="live-region" aria-live="assertive"></div>
+
+      <!-- 页脚标语 -->
+      <footer class="footer">
+        <p>🔥 沸腾时刻 · 倾情呈现</p>
+      </footer>
+
+      <!-- 时间到全屏脉冲提醒层 -->
+      <div class="flash-overlay" id="flash-overlay" aria-hidden="true"></div>
     </div>
 
-    <script src="app.js"></script>
-</body>
-
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

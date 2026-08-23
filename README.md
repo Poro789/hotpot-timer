@@ -44,11 +44,11 @@ python convert_csv.py
 
 ## 文件
 
-| 文件 | 说明 |
-|---|---|
-| `index.html` | 页面结构 |
-| `app.js` | 应用逻辑（状态 / 计时 / 渲染 / 持久化） |
-| `styles.css` | 样式（深夜炭火主题） |
-| `foodDatabase.js` | 食材库（**生成产物**） |
-| `hotpot_food_library (1).csv` | 食材数据源（唯一事实源） |
-| `convert_csv.py` | CSV → JS 生成脚本 |
+| 文件                          | 说明                                    |
+| ----------------------------- | --------------------------------------- |
+| `index.html`                  | 页面结构                                |
+| `app.js`                      | 应用逻辑（状态 / 计时 / 渲染 / 持久化） |
+| `styles.css`                  | 样式（深夜炭火主题）                    |
+| `foodDatabase.js`             | 食材库（**生成产物**）                  |
+| `hotpot_food_library (1).csv` | 食材数据源（唯一事实源）                |
+| `convert_csv.py`              | CSV → JS 生成脚本                       |

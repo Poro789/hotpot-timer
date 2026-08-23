@@ -5,6 +5,10 @@ dist/
 # 调试/截图残留（留在本地，不入库）
 .design-test/
 
+# 测试产物
+test-results/
+playwright-report/
+
 # 操作系统垃圾文件
 Thumbs.db
 Desktop.ini

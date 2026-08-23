@@ -1,0 +1,1100 @@
+/* ============ 全局样式（深夜炭火 · 市井火锅风） ============ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* 背景：炭火夜色，暖调递进 */
+  --bg-deep: #14100d;
+  --bg-panel: #1d1712;
+  --bg-card: #262019;
+  --bg-card-hover: #2f2820;
+  /* 主色：从红油、牛油、炭火中提炼 */
+  --chili-red: #e04a33; /* 红油辣汤 */
+  --chili-red-bright: #ff6a4d; /* 红油提亮（交互态） */
+  --flame-orange: #ff8c42; /* 炭火 */
+  --butter-amber: #f2a93b; /* 牛油金 */
+  --butter-amber-bright: #ffc46b; /* 出锅金（完成态） */
+  --copper: #c98a4b; /* 铜锅（次要操作） */
+  --copper-bright: #e0a869; /* 铜锅提亮（交互态） */
+  --text-primary: #f7f1e6; /* 暖白 */
+  --text-secondary: #b3a48f; /* 暖灰 */
+  --border-subtle: rgba(255, 236, 200, 0.08);
+  --glow-red: 0 0 18px rgba(224, 74, 51, 0.45);
+  --glow-amber: 0 0 18px rgba(242, 169, 59, 0.45);
+  --border-radius: 14px;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(224, 74, 51, 0.16) 0%, transparent 60%),
+    radial-gradient(800px 500px at 90% 110%, rgba(255, 140, 66, 0.12) 0%, transparent 60%),
+    var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 12px;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+
+/* ============ 无障碍 ============ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--flame-orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============ 头部 ============ */
+.header {
+  text-align: center;
+  padding: 18px 0 6px;
+}
+
+.header h1 {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--flame-orange), var(--chili-red));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px rgba(224, 74, 51, 0.35));
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 4px;
+  margin-top: 6px;
+}
+
+/* 提醒设置行 */
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.setting-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 32px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.setting-btn[aria-pressed='true'] {
+  color: var(--text-primary);
+  border-color: rgba(242, 169, 59, 0.4);
+}
+
+.setting-btn.off {
+  opacity: 0.45;
+}
+
+.volume-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.volume-wrap input[type='range'] {
+  width: 84px;
+  accent-color: var(--flame-orange);
+  cursor: pointer;
+}
+
+/* ============ 通用面板 ============ */
+.timer-section,
+.quick-time-section,
+.food-section {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)), var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.timer-section h2,
+.quick-time-section h2,
+.food-section h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text-primary);
+}
+
+/* ============ 全局控制按钮 ============ */
+.global-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  justify-content: center;
+}
+
+.btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+  min-width: 96px;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none !important;
+}
+
+.btn-secondary {
+  background: rgba(201, 138, 75, 0.18);
+  color: var(--copper-bright);
+  border: 1px solid rgba(201, 138, 75, 0.5);
+}
+
+.btn-secondary:not(:disabled):active {
+  background: rgba(201, 138, 75, 0.32);
+  box-shadow: 0 0 14px rgba(201, 138, 75, 0.4);
+}
+
+.btn-danger {
+  background: rgba(224, 74, 51, 0.18);
+  color: var(--chili-red-bright);
+  border: 1px solid rgba(224, 74, 51, 0.5);
+}
+
+.btn-danger:not(:disabled):active {
+  background: rgba(224, 74, 51, 0.32);
+  box-shadow: var(--glow-red);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  min-width: 76px;
+}
+
+.btn-ghost:not(:disabled):active {
+  color: var(--flame-orange);
+  border-color: rgba(255, 140, 66, 0.5);
+}
+
+/* ============ 计时器网格 ============ */
+.timers-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  min-height: 90px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  grid-column: 1 / -1;
+  border: 1.5px dashed rgba(255, 236, 200, 0.14);
+  border-radius: 12px;
+}
+
+/* ============ 计时器卡片 ============ */
+.timer-card {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1.5px solid var(--border-subtle);
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background 0.3s ease;
+  min-height: 150px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 计时中：红油呼吸边框 */
+.timer-card.running {
+  border-color: rgba(224, 74, 51, 0.6);
+  box-shadow:
+    var(--glow-red),
+    inset 0 0 24px rgba(224, 74, 51, 0.06);
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px rgba(224, 74, 51, 0.3),
+      inset 0 0 24px rgba(224, 74, 51, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(224, 74, 51, 0.6),
+      inset 0 0 24px rgba(224, 74, 51, 0.1);
+  }
+}
+
+/* 已完成：出锅金 + 闪烁提醒 */
+.timer-card.completed {
+  border-color: var(--butter-amber-bright);
+  background:
+    linear-gradient(180deg, rgba(242, 169, 59, 0.12), rgba(242, 169, 59, 0.04)), var(--bg-card);
+  animation: flashDone 0.8s ease-in-out 4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes flashDone {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(242, 169, 59, 0.2);
+  }
+  50% {
+    box-shadow:
+      var(--glow-amber),
+      inset 0 0 30px rgba(242, 169, 59, 0.18);
+  }
+}
+
+.timer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.timer-food-name {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+/* 计时主体 */
+.timer-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.timer-info {
+  width: 100%;
+  text-align: center;
+}
+
+.timer-time {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--butter-amber);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  text-shadow: 0 0 14px rgba(242, 169, 59, 0.35);
+}
+
+.timer-card.running .timer-time {
+  color: var(--chili-red-bright);
+  text-shadow: 0 0 16px rgba(224, 74, 51, 0.5);
+}
+
+.timer-card.completed .timer-time {
+  color: var(--butter-amber-bright);
+  text-shadow: 0 0 16px rgba(242, 169, 59, 0.5);
+}
+
+.timer-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* 卡片按钮 */
+.timer-card-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+
+.btn-small {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+  min-width: 64px;
+  min-height: 36px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-small:active {
+  transform: scale(0.93);
+}
+
+.btn-toggle {
+  background: rgba(201, 138, 75, 0.18);
+  color: var(--copper-bright);
+  border: 1px solid rgba(201, 138, 75, 0.5);
+}
+
+.btn-toggle:active {
+  background: rgba(201, 138, 75, 0.3);
+  box-shadow: 0 0 12px rgba(201, 138, 75, 0.4);
+}
+
+.timer-card.completed .btn-toggle {
+  background: rgba(242, 169, 59, 0.16);
+  color: var(--butter-amber-bright);
+  border-color: rgba(242, 169, 59, 0.45);
+}
+
+.btn-delete {
+  background: rgba(224, 74, 51, 0.16);
+  color: var(--chili-red-bright);
+  border: 1px solid rgba(224, 74, 51, 0.5);
+}
+
+.btn-delete:active {
+  background: rgba(224, 74, 51, 0.26);
+  box-shadow: var(--glow-red);
+}
+
+/* ============ "时间到"确认面板 ============ */
+.done-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  z-index: 940;
+  background:
+    linear-gradient(180deg, rgba(242, 169, 59, 0.14), rgba(242, 169, 59, 0.05)), var(--bg-panel);
+  border: 1.5px solid rgba(242, 169, 59, 0.55);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: 14px 16px 16px;
+  box-shadow:
+    0 -6px 30px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(242, 169, 59, 0.25);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.done-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.done-banner-head h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--butter-amber-bright);
+}
+
+.done-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.done-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 9px 12px;
+}
+
+.done-item-name {
+  font-size: 14px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+/* ============ 全屏脉冲提醒（时间到；非频闪，光敏安全） ============ */
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(242, 169, 59, 0.5), rgba(242, 169, 59, 0.15));
+  opacity: 0;
+  pointer-events: none;
+  z-index: 900;
+}
+
+.flash-overlay.flashing {
+  animation: softPulse 1.1s ease-in-out 3;
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ============ 快捷时长 ============ */
+.quick-time-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.quick-time-btn {
+  padding: 12px 6px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-card);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.quick-time-btn:active {
+  transform: scale(0.93);
+  border-color: var(--flame-orange);
+  color: var(--flame-orange);
+  box-shadow: 0 0 12px rgba(255, 140, 66, 0.35);
+}
+
+/* ============ 食材选择 ============ */
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 20px;
+  background: var(--bg-card);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 36px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.tab-btn:active {
+  transform: scale(0.95);
+}
+
+.tab-btn.active {
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(224, 74, 51, 0.4);
+}
+
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.food-card {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 11px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1.5px solid var(--border-subtle);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.food-card:active {
+  transform: scale(0.95);
+  background: var(--bg-card-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.food-card.selected {
+  border-color: rgba(224, 74, 51, 0.55);
+  background:
+    linear-gradient(180deg, rgba(224, 74, 51, 0.1), rgba(224, 74, 51, 0.03)), var(--bg-card);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* 已添加份数角标 */
+.food-count-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(224, 74, 51, 0.5);
+}
+
+.food-card .food-name {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.food-card .food-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.food-card .food-time span {
+  color: var(--butter-amber);
+  font-weight: 700;
+}
+
+/* "我的食材"页的卡片：右上角留白给删除按钮 */
+.food-card-custom {
+  padding-right: 34px;
+}
+
+.food-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(224, 74, 51, 0.16);
+  color: var(--chili-red-bright);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.food-remove-btn:active {
+  background: rgba(224, 74, 51, 0.4);
+  transform: scale(0.9);
+}
+
+.my-foods-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  border: 1.5px dashed rgba(255, 236, 200, 0.14);
+  border-radius: 12px;
+}
+
+/* ============ 自定义食材添加面板 ============ */
+.my-foods-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.my-foods-panel input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.my-foods-panel input::placeholder {
+  color: var(--text-secondary);
+}
+
+.my-foods-panel input:focus {
+  border-color: var(--flame-orange);
+  box-shadow: 0 0 12px rgba(255, 140, 66, 0.3);
+}
+
+.custom-time-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  row-gap: 14px;
+}
+
+.time-chip {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 34px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.time-chip:active {
+  transform: scale(0.93);
+}
+
+.time-chip.active {
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 0 12px rgba(224, 74, 51, 0.4);
+}
+
+.btn-add-food {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-add-food:active {
+  transform: scale(0.97);
+  box-shadow: var(--glow-red);
+}
+
+/* ============ 快速计时名称输入弹层 ============ */
+.quick-name-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 7, 5, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  /* safe center：移动端键盘弹出时避免弹层被挤出可视区 */
+  align-items: safe center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 950;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* hidden 属性默认 display:none，显式声明避免被覆盖 */
+.quick-name-overlay[hidden] {
+  display: none;
+}
+
+.quick-name-overlay.open {
+  opacity: 1;
+}
+
+.quick-name-modal {
+  width: 100%;
+  max-width: 340px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)), var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius);
+  padding: 22px 20px 20px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(224, 74, 51, 0.15);
+  transform: translateY(14px) scale(0.96);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.quick-name-overlay.open .quick-name-modal {
+  transform: translateY(0) scale(1);
+}
+
+.quick-name-modal h3 {
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+  background: linear-gradient(90deg, var(--flame-orange), var(--chili-red));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.quick-name-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.quick-name-hint span {
+  color: var(--butter-amber);
+  font-weight: 700;
+}
+
+.quick-name-modal input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.quick-name-modal input::placeholder {
+  color: var(--text-secondary);
+}
+
+.quick-name-modal input:focus {
+  border-color: var(--flame-orange);
+  box-shadow: 0 0 12px rgba(255, 140, 66, 0.3);
+}
+
+.quick-name-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(224, 74, 51, 0.35);
+}
+
+.btn-primary:not(:disabled):active {
+  box-shadow: var(--glow-red);
+}
+
+/* ============ PWA 提示条 ============ */
+.install-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 70px;
+  max-width: 480px;
+  margin: 0 auto;
+  z-index: 930;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 140, 66, 0.5);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.install-banner[hidden] {
+  display: none;
+}
+
+.install-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.update-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 70px;
+  max-width: 480px;
+  margin: 0 auto;
+  z-index: 920;
+  background: var(--bg-card);
+  border: 1px solid rgba(242, 169, 59, 0.5);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.update-banner[hidden] {
+  display: none;
+}
+
+.update-banner .btn-small {
+  width: 100%;
+  background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
+  color: #fff;
+  border: none;
+}
+
+/* ============ Toast ============ */
+.toast {
+  position: fixed;
+  bottom: 34px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: rgba(38, 32, 25, 0.95);
+  border: 1px solid rgba(242, 169, 59, 0.4);
+  color: var(--text-primary);
+  padding: 12px 26px;
+  border-radius: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  max-width: 86vw;
+  text-align: center;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ============ 页脚标语 ============ */
+.footer {
+  text-align: center;
+  padding: 18px 0 6px;
+}
+
+.footer p {
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+/* ============ 守锅模式（全屏） ============ */
+body:fullscreen .timer-section {
+  margin: 0;
+  border-radius: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+}
+
+body:fullscreen .global-controls {
+  margin-bottom: 18px;
+}
+
+body:fullscreen .timers-container {
+  flex: 1;
+  align-content: start;
+}
+
+body:fullscreen .timer-card {
+  min-height: 170px;
+  padding: 18px 14px 14px;
+}
+
+body:fullscreen .timer-food-name {
+  font-size: 17px;
+}
+
+body:fullscreen .timer-time {
+  font-size: 42px;
+}
+
+body:fullscreen .btn {
+  font-size: 16px;
+  min-height: 48px;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 360px) {
+  .header h1 {
+    font-size: 25px;
+  }
+
+  .quick-time-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timers-container {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .timer-card {
+    min-height: 140px;
+    padding: 10px;
+  }
+
+  .timer-time {
+    font-size: 22px;
+  }
+}
+
+@media (min-width: 481px) {
+  body {
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 600px;
+  }
+}
+
+/* ============ 动效降级（光敏/晕动症保护） ============ */
+@media (prefers-reduced-motion: reduce) {
+  .timer-card.running {
+    animation: none;
+  }
+
+  .timer-card.completed {
+    animation: none;
+  }
+
+  .flash-overlay.flashing {
+    animation: none;
+    opacity: 0.4; /* 单次柔和提示，不闪烁 */
+  }
+
+  .done-banner {
+    animation: none;
+  }
+
+  .quick-name-modal,
+  .toast {
+    transition: none;
+  }
+}
