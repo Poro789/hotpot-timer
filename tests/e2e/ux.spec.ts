@@ -45,21 +45,70 @@ test.describe('交互体验与显示修复', () => {
     await expect(page.locator('#done-banner')).toBeHidden();
   });
 
-  test('设置开关有即时反馈（toast + 状态切换）', async ({ page }) => {
+  test('设置行只有声音开关+音量：声音开关有即时反馈，静音时音量条禁用', async ({ page }) => {
     await page.goto('/');
-    // 震动：默认开启 -> 点一次关闭 -> 再点开启
-    await page.locator('#set-vibrate').click();
-    await expect(page.locator('#toast')).toContainText('震动提醒已关闭');
-    await expect(page.locator('#set-vibrate')).toHaveText(/📴/);
-    await page.locator('#set-vibrate').click();
-    await expect(page.locator('#toast')).toContainText('震动提醒已开启');
-    await expect(page.locator('#set-vibrate')).toHaveText(/📳/);
-    // 声音：关闭时给出反馈
+    // 震动/通知开关已移除
+    await expect(page.locator('#set-vibrate')).toHaveCount(0);
+    await expect(page.locator('#set-notify')).toHaveCount(0);
+    // 声音：默认开启 -> 关闭 -> 再开启
     await page.locator('#set-sound').click();
     await expect(page.locator('#toast')).toContainText('声音提醒已关闭');
     await expect(page.locator('#set-sound')).toHaveText(/🔇/);
-    // 恢复，避免影响其他用例的默认状态
+    await expect(page.locator('#set-volume')).toBeDisabled();
     await page.locator('#set-sound').click();
+    await expect(page.locator('#toast')).toContainText('声音提醒已开启');
+    await expect(page.locator('#set-sound')).toHaveText(/🔊/);
+    await expect(page.locator('#set-volume')).toBeEnabled();
+    // 声音与音量在同一行（flex 居中对齐：比较垂直中心，两者高度不同）
+    const soundBox = await page.locator('#set-sound').boundingBox();
+    const volumeBox = await page.locator('.volume-wrap').boundingBox();
+    expect(soundBox).not.toBeNull();
+    expect(volumeBox).not.toBeNull();
+    const soundCenter = soundBox!.y + soundBox!.height / 2;
+    const volumeCenter = volumeBox!.y + volumeBox!.height / 2;
+    expect(Math.abs(soundCenter - volumeCenter)).toBeLessThan(4);
+    // 音量在声音右侧
+    expect(volumeBox!.x).toBeGreaterThan(soundBox!.x);
+  });
+
+  test('添加提示单行显示；完成卡"加一份"按钮单行', async ({ page }) => {
+    // 预置一个已完成计时（按钮显示"加一份"）
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'hotpot-timer-state-v2',
+        JSON.stringify({
+          version: 3,
+          timers: [
+            {
+              id: 1,
+              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '' },
+              remainingMs: 0,
+              state: 'done',
+              endAt: null,
+              missed: false,
+            },
+          ],
+          myFoods: [],
+          settings: { sound: false, vibrate: false, systemNotify: false },
+          nextTimerId: 2,
+          customFoodCounter: 1,
+        }),
+      );
+    });
+    await page.goto('/');
+    // "加一份"按钮：文字单行（高度不超 min-height 36 + 边框余量）
+    const addBtn = page.locator('.timer-card .btn-toggle');
+    await expect(addBtn).toHaveText('加一份');
+    const addBox = await addBtn.boundingBox();
+    expect(addBox).not.toBeNull();
+    expect(addBox!.height).toBeLessThan(42);
+    // 点一个肉类食材（默认肉类页；"虾"在海鲜类）：toast 只报菜名、单行
+    await page.locator('.food-card', { hasText: '鸭胗' }).first().click();
+    await expect(page.locator('#toast')).toHaveText('已添加 🦆 鸭胗');
+    const toastBox = await page.locator('#toast').boundingBox();
+    expect(toastBox).not.toBeNull();
+    // 单行 ≈ 46px；若折成两行会到 ~67px，用 56 区分
+    expect(toastBox!.height).toBeLessThan(56);
   });
 
   test('守锅模式：点击后进入或优雅降级，按钮文案同步切换', async ({ page }) => {

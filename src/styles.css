@@ -387,7 +387,7 @@ body {
 }
 
 .btn-small {
-  padding: 7px 14px;
+  padding: 7px 10px;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -397,10 +397,12 @@ body {
     transform 0.15s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
-  min-width: 64px;
+  min-width: 0;
   min-height: 36px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  /* 窄卡片里两键平分，"加一份"等文案必须单行 */
+  white-space: nowrap;
 }
 
 .btn-small:active {
@@ -986,7 +988,7 @@ body {
   z-index: 1000;
   pointer-events: none;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
-  max-width: 86vw;
+  max-width: 92vw;
   text-align: center;
 }
 

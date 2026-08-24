@@ -37,7 +37,9 @@ export interface Settings {
   sound: boolean;
   /** 0..1 */
   volume: number;
+  /** @deprecated 震动功能已移除，字段保留仅为旧存档兼容（无 UI、无行为） */
   vibrate: boolean;
+  /** @deprecated 系统通知功能已移除，字段保留仅为旧存档兼容（无 UI、无行为） */
   systemNotify: boolean;
   installDismissed: boolean;
 }
@@ -45,8 +47,8 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   volume: 0.3,
-  vibrate: true,
-  systemNotify: true,
+  vibrate: false,
+  systemNotify: false,
   installDismissed: false,
 };
 

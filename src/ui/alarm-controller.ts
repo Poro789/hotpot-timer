@@ -9,14 +9,10 @@ import {
 } from '../core/alarm';
 import type { AlarmState } from '../core/types';
 import { beep } from '../platform/audio';
-import { vibrate } from '../platform/haptics';
-import { systemNotify } from '../platform/notify';
 
 export interface AlarmOptions {
   /** 发声（需要用户手势解锁过音频；silent 用于"离开期间到期"的补报） */
   sound: boolean;
-  /** 系统通知（逐条） */
-  notify: boolean;
   /** 全屏脉冲 */
   flash: boolean;
   /** 屏幕阅读器播报 */
@@ -33,7 +29,7 @@ interface Deps {
 /**
  * 告警控制器：完成队列 + 循环提醒（确认模型）。
  * - 多份同时到点：合并为一次告警（一次闪光 + 循环音），列表逐条确认；
- * - 循环音/震动每 2s 一次，直到全部确认或 60s 封顶；
+ * - 循环音每 2s 一次，直到全部确认或 60s 封顶；
  * - silent 入队（离开期间到期）：不发声，只亮面板；用户首次交互后循环音自动接管。
  */
 export class AlarmController {
@@ -60,7 +56,6 @@ export class AlarmController {
       const name = t?.food.name ?? '';
       this.state = enqueueDone(this.state, id, wallNow);
       if (opts.announce) this.deps.announce(`${name} 时间到！`);
-      if (opts.notify) systemNotify(`${name} 时间到！`);
     }
 
     if (opts.flash) this.deps.flash();
@@ -102,7 +97,6 @@ export class AlarmController {
     const settings = this.deps.store.snapshot.settings;
     this.lastPulseWall = Date.now();
     if (settings.sound) beep(settings.volume);
-    if (settings.vibrate) vibrate([200, 100, 200]);
   }
 
   private startLoop(): void {

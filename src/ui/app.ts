@@ -11,7 +11,6 @@ import { foodDatabase } from '../core/catalog';
 import { loadState, saveState, watchExternalChanges } from '../platform/storage';
 import { Scheduler } from '../platform/scheduler';
 import { unlockAudio } from '../platform/audio';
-import { requestNotifyPermission } from '../platform/notify';
 import { setWakeLock } from '../platform/wakelock';
 import { collectElements } from './elements';
 import { Render, type CategoryTab } from './render';
@@ -22,7 +21,6 @@ import { AlarmController, type AlarmOptions } from './alarm-controller';
 import { initSettings } from './settings-ui';
 import { initPwa } from './pwa';
 import { announce } from './live';
-import { formatMs } from '../core/time';
 
 /** 组合根：装配 core × platform × ui，并接线全部事件 */
 export function boot(): void {
@@ -75,11 +73,11 @@ export function boot(): void {
       for (const t of store.snapshot.timers) {
         if (t.state === 'running') render.updateTime(t.id, liveRemainingMs(t, ts));
       }
-      handleDue(due, { sound: true, notify: true, flash: true, announce: true });
+      handleDue(due, { sound: true, flash: true, announce: true });
     },
     onWake: () => {
       const due = tickTimers(store.snapshot.timers, ts);
-      handleDue(due, { sound: true, notify: true, flash: true, announce: true });
+      handleDue(due, { sound: true, flash: true, announce: true });
       scheduler.onStateChange(); // 若还有运行中条目，重新武装
     },
   });
@@ -115,7 +113,8 @@ export function boot(): void {
   function pickFood(name: string, timeSec: number, desc: string, custom: boolean): void {
     const food: NewFood = { name, timeSec, desc, custom };
     store.addFoodTimer(food, ts);
-    toast.show(`已添加: ${name} (${formatMs(timeSec * 1000)})`);
+    // 时长卡片上已经看得见，toast 只报菜名，保持一行
+    toast.show(`已添加 ${name}`);
   }
 
   render.onPickFood = (name, timeSec, _desc, custom) => {
@@ -163,7 +162,7 @@ export function boot(): void {
     const name = el.customFoodNameInput.value;
     if (store.addMyFood(name, selectedCustomTime)) {
       el.customFoodNameInput.value = '';
-      toast.show(`已添加食材: ${name.trim()} (${formatMs(selectedCustomTime * 1000)})`);
+      toast.show(`已添加食材 ${name.trim()}`);
     } else {
       toast.show('请输入食材名称');
     }
@@ -238,7 +237,7 @@ export function boot(): void {
         seconds,
         (name) => {
           store.addQuickTimer(name, seconds, ts);
-          toast.show(`已添加: ${name} (${formatMs(seconds * 1000)})`);
+          toast.show(`已添加 ${name}`);
         },
         () => toast.show('已取消'),
       );
@@ -246,10 +245,7 @@ export function boot(): void {
   });
 
   // 设置 / PWA
-  initSettings(store, el, {
-    toast: (m) => toast.show(m),
-    onRequestNotify: () => requestNotifyPermission(),
-  });
+  initSettings(store, el, { toast: (m) => toast.show(m) });
   initPwa(store, el, { toast: (m) => toast.show(m) });
 
   // ---------- 订阅：持久化 + 视图 + 调度 + 亮屏 ----------
@@ -282,16 +278,10 @@ export function boot(): void {
     }
   });
 
-  document.addEventListener(
-    'pointerdown',
-    () => {
-      unlockAudio();
-      // 静默确保通知权限（内部仅在 default 状态才真正弹窗）
-      if (store.snapshot.settings.systemNotify) void requestNotifyPermission();
-      alarm.onUserGesture();
-    },
-    { passive: true },
-  );
+  document.addEventListener('pointerdown', () => {
+    unlockAudio();
+    alarm.onUserGesture();
+  });
 
   window.addEventListener('pagehide', () => void saveState(store.snapshot));
   window.addEventListener('beforeunload', () => void saveState(store.snapshot));
@@ -313,7 +303,7 @@ export function boot(): void {
   if (missed.length > 0) {
     alarm.handleDue(
       missed.map((t) => t.id),
-      { sound: false, notify: false, flash: true, announce: true },
+      { sound: false, flash: true, announce: true },
     );
     toast.show(`${missed.length} 项在你离开时已到点`);
   }

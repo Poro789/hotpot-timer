@@ -33,8 +33,6 @@ export function collectElements() {
     updateBanner: req<HTMLDivElement>('update-banner'),
     updateBtn: req<HTMLButtonElement>('update-btn'),
     setSound: req<HTMLButtonElement>('set-sound'),
-    setVibrate: req<HTMLButtonElement>('set-vibrate'),
-    setNotify: req<HTMLButtonElement>('set-notify'),
     setVolume: req<HTMLInputElement>('set-volume'),
   };
 }
