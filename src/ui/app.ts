@@ -207,26 +207,6 @@ export function boot(): void {
     toast.show('已删除所有计时器');
   });
 
-  // 守锅模式（整页全屏 + 保持亮屏）。
-  // 必须全屏 body 而不是 timer-section：完成面板/脉冲层/弹层都在
-  // section 之外，section 全屏时这些提醒全部不可见。
-  el.watchModeBtn.addEventListener('click', async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else {
-        await document.body.requestFullscreen();
-      }
-    } catch {
-      toast.show('当前浏览器不支持全屏');
-    }
-  });
-  document.addEventListener('fullscreenchange', () => {
-    const fs = !!document.fullscreenElement;
-    el.watchModeBtn.textContent = fs ? '✕ 退出守锅' : '⛶ 守锅';
-    void setWakeLock(fs);
-  });
-
   // 快捷计时
   document.querySelectorAll<HTMLButtonElement>('.quick-time-btn').forEach((btn) => {
     btn.addEventListener('click', () => {

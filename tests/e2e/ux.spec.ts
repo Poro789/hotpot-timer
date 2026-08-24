@@ -111,30 +111,6 @@ test.describe('交互体验与显示修复', () => {
     expect(toastBox!.height).toBeLessThan(56);
   });
 
-  test('守锅模式：点击后进入或优雅降级，按钮文案同步切换', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('#watch-mode-btn')).toHaveText(/守锅/);
-    await page.locator('#watch-mode-btn').click();
-    // 两种合法结果：环境支持全屏 -> 按钮变"退出守锅"；
-    // 不支持（如某些 headless 场景）-> 出现降级 toast。
-    await expect
-      .poll(
-        async () => {
-          const toast = (await page.locator('#toast').textContent()) ?? '';
-          const label = (await page.locator('#watch-mode-btn').textContent()) ?? '';
-          return toast.includes('不支持全屏') || label.includes('退出守锅');
-        },
-        { timeout: 5_000 },
-      )
-      .toBe(true);
-    // 若进入了全屏，退出它，保证后续用例干净
-    const label = (await page.locator('#watch-mode-btn').textContent()) ?? '';
-    if (label.includes('退出守锅')) {
-      await page.locator('#watch-mode-btn').click();
-      await expect(page.locator('#watch-mode-btn')).not.toHaveText(/退出守锅/);
-    }
-  });
-
   test('manifest/图标引用为相对路径（Pages 子路径下可安装）', async ({ page }) => {
     await page.goto('/');
     const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
@@ -145,7 +121,9 @@ test.describe('交互体验与显示修复', () => {
 
   test('全局按钮单行显示不折行', async ({ page }) => {
     await page.goto('/');
-    for (const id of ['pause-all-btn', 'delete-all-btn', 'watch-mode-btn']) {
+    // 守锅按钮已按需求移除，全局控制只剩两个
+    await expect(page.locator('#watch-mode-btn')).toHaveCount(0);
+    for (const id of ['pause-all-btn', 'delete-all-btn']) {
       const btn = page.locator(`#${id}`);
       // 高度应接近 min-height（44px），而不是两行文字撑高（约 66px+）
       const box = await btn.boundingBox();

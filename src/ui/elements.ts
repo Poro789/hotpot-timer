@@ -11,7 +11,6 @@ export function collectElements() {
     emptyState: req<HTMLDivElement>('empty-state'),
     pauseAllBtn: req<HTMLButtonElement>('pause-all-btn'),
     deleteAllBtn: req<HTMLButtonElement>('delete-all-btn'),
-    watchModeBtn: req<HTMLButtonElement>('watch-mode-btn'),
     foodGrid: req<HTMLDivElement>('food-grid'),
     categoryTabs: document.querySelector<HTMLElement>('.category-tabs')!,
     toast: req<HTMLDivElement>('toast'),

@@ -5,7 +5,7 @@ interface WakeLockLike {
 let lock: WakeLockLike | null = null;
 
 /**
- * 计时进行中保持屏幕常亮（守锅场景）。
+ * 计时进行中保持屏幕常亮（手机放桌边守锅，避免中途锁屏看不到剩余时间）。
  * 页面从后台回前台时系统可能回收 lock，由调用方在 visibilitychange 里重新调用。
  */
 export async function setWakeLock(active: boolean): Promise<void> {

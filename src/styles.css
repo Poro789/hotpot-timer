@@ -233,18 +233,6 @@ body {
   box-shadow: var(--glow-red);
 }
 
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
-  min-width: 76px;
-}
-
-.btn-ghost:not(:disabled):active {
-  color: var(--flame-orange);
-  border-color: rgba(255, 140, 66, 0.5);
-}
-
 /* ============ 计时器网格 ============ */
 .timers-container {
   display: grid;
@@ -1008,87 +996,6 @@ body {
   letter-spacing: 3px;
   color: var(--text-secondary);
   opacity: 0.75;
-}
-
-/* ============ 守锅模式（整页全屏：只留计时，列表可滚动） ============
-   注意：必须与 JS 的 document.body.requestFullscreen() 配套——
-   完成面板/脉冲层/弹层都在 .container 内，section 级全屏时不可见。 */
-body:fullscreen {
-  padding: 0;
-}
-
-body:fullscreen .container {
-  max-width: 640px;
-  height: 100vh;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-body:fullscreen .header {
-  padding: 16px 16px 4px;
-}
-
-body:fullscreen .header .subtitle,
-body:fullscreen .settings-row {
-  display: none;
-}
-
-body:fullscreen .timer-section {
-  flex: 1;
-  min-height: 0;
-  margin: 8px 12px 0;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  display: flex;
-  flex-direction: column;
-  padding: 14px 14px 16px;
-}
-
-body:fullscreen .global-controls {
-  margin-bottom: 14px;
-}
-
-body:fullscreen .timers-container {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  align-content: start;
-  padding-bottom: 8px;
-}
-
-body:fullscreen .timer-card {
-  min-height: 170px;
-  padding: 16px 14px 14px;
-}
-
-body:fullscreen .timer-food-name {
-  font-size: 17px;
-}
-
-body:fullscreen .timer-time {
-  font-size: 40px;
-}
-
-body:fullscreen .btn {
-  font-size: 16px;
-  min-height: 48px;
-}
-
-body:fullscreen .quick-time-section,
-body:fullscreen .food-section,
-body:fullscreen .footer {
-  display: none;
-}
-
-/* 守锅模式下"时间到"面板更醒目（占位更高，遮在列表上） */
-body:fullscreen .done-banner {
-  bottom: 0;
-  max-width: none;
 }
 
 /* ============ 响应式 ============ */
