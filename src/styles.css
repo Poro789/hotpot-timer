@@ -719,6 +719,33 @@ body {
   color: var(--chili-red-bright);
 }
 
+/* 手法提示行 */
+.timer-technique {
+  font-size: 11px;
+  color: var(--copper-bright);
+  line-height: 1.4;
+  padding: 4px 8px;
+  background: rgba(201, 138, 75, 0.1);
+  border-radius: 6px;
+}
+
+/* 超时分级：hard=多煮即老（红色警告） */
+.timer-time.overtime-hard {
+  color: var(--chili-red-bright);
+  text-shadow: 0 0 16px rgba(224, 74, 51, 0.6);
+  animation: overtimePulse 1s ease-in-out infinite;
+}
+
+@keyframes overtimePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 /* "我的食材"页的卡片：右上角留白给删除按钮 */
 .food-card-custom {
   padding-right: 34px;

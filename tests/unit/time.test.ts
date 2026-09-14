@@ -49,9 +49,10 @@ describe('formatMs', () => {
     expect(formatMs(15_000)).toBe('15秒');
     expect(formatMs(0)).toBe('0秒');
   });
-  it('向上取整：刚启动显示完整时长', () => {
-    expect(formatMs(14_999)).toBe('15秒');
-    expect(formatMs(60_001)).toBe('1分1秒');
+  it('向下取整：到点前可见 0秒', () => {
+    expect(formatMs(14_999)).toBe('14秒');
+    expect(formatMs(999)).toBe('0秒');
+    expect(formatMs(60_001)).toBe('1分');
   });
   it('超过一分钟显示分秒', () => {
     expect(formatMs(90_000)).toBe('1分30秒');

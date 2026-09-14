@@ -11,9 +11,9 @@ export const systemTime: TimeSource = {
   mono: () => performance.now(),
 };
 
-/** 15000 -> "15秒"；90000 -> "1分30秒"；600000 -> "10分"（向上取整：刚启动显示完整时长） */
+/** 15000 -> "15秒"；90000 -> "1分30秒"；600000 -> "10分"（向下取整：14.9s 显示 14秒，到点前可见 0秒） */
 export function formatMs(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
+  const total = Math.max(0, Math.floor(ms / 1000));
   if (total < 60) return `${total}秒`;
   const min = Math.floor(total / 60);
   const sec = total % 60;

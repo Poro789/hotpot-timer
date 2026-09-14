@@ -59,6 +59,9 @@ const HEADER = [
   'CueWellDone',
   'RiskNote',
   'ServingTip',
+  'Technique',
+  'Overtime',
+  'Midpoint',
 ];
 
 function fail(msg) {
@@ -138,6 +141,12 @@ function renderCatalog(foods) {
   lines.push('  cues: Record<Doneness, string>;');
   lines.push('  /** 偏生档安全提示；空串 = 无额外风险 */');
   lines.push('  risk: string;');
+  lines.push('  /** 涮煮手法提示（一句话）；有明确手法时非空 */');
+  lines.push('  technique?: string;');
+  lines.push("  /** 超时后果：hard=多煮即老 / soft=多煮更入味 */");
+  lines.push("  overtime?: 'hard' | 'soft';");
+  lines.push('  /** 阶段提示：已过该比例时提醒检查（0~1） */');
+  lines.push('  midpoint?: number;');
   lines.push('}');
   lines.push('');
   lines.push('export const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [');
@@ -150,11 +159,18 @@ function renderCatalog(foods) {
   for (const id of CATEGORY_IDS) {
     lines.push(`  ${id}: [`);
     for (const f of foods[id]) {
+      const extra = [
+        f.technique ? `technique: ${tsString(f.technique)}` : '',
+        f.overtime ? `overtime: '${f.overtime}'` : '',
+        f.midpoint !== undefined ? `midpoint: ${f.midpoint}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
       lines.push(
         `    { name: ${tsString(f.name)}, time: ${f.medium}, desc: ${tsString(f.desc)}, ` +
           `times: { rare: ${f.rare}, medium: ${f.medium}, wellDone: ${f.well} }, ` +
           `cues: { rare: ${tsString(f.cueRare)}, medium: ${tsString(f.cueMedium)}, wellDone: ${tsString(f.cueWell)} }, ` +
-          `risk: ${tsString(f.risk)} },`,
+          `risk: ${tsString(f.risk)}${extra ? ', ' + extra : ''} },`,
       );
     }
     lines.push('  ],');
@@ -197,7 +213,7 @@ function main() {
       err(lineNo, `列数 ${row.length} ≠ ${HEADER.length}`);
       return;
     }
-    const [name, category, tRare, tMed, tWell, cueRare, cueMed, cueWell, risk, desc] = row;
+    const [name, category, tRare, tMed, tWell, cueRare, cueMed, cueWell, risk, desc, technique, overtime, midpoint] = row;
     const n = (name ?? '').trim();
     if (!n) {
       err(lineNo, 'Name 为空');
@@ -229,6 +245,20 @@ function main() {
       err(lineNo, '三档判据均不能为空（红绿灯必须给出目视判据）');
       return;
     }
+    const overtimeVal = (overtime ?? '').trim();
+    if (overtimeVal && overtimeVal !== 'hard' && overtimeVal !== 'soft') {
+      err(lineNo, `Overtime 非法：${JSON.stringify(overtimeVal)}（须为 hard/soft/空）`);
+      return;
+    }
+    const midpointVal = (midpoint ?? '').trim();
+    let midpointNum;
+    if (midpointVal) {
+      if (!/^\d+(\.\d+)?$/.test(midpointVal) || Number(midpointVal) <= 0 || Number(midpointVal) >= 1) {
+        err(lineNo, `Midpoint 非法：${JSON.stringify(midpointVal)}（须为 0~1 小数/空）`);
+        return;
+      }
+      midpointNum = Number(midpointVal);
+    }
     foods[id].push({
       name: n,
       rare,
@@ -239,6 +269,9 @@ function main() {
       cueWell: cues[2],
       risk: (risk ?? '').trim(),
       desc: (desc ?? '').trim(),
+      technique: (technique ?? '').trim(),
+      overtime: overtimeVal || undefined,
+      midpoint: midpointNum,
     });
   });
 

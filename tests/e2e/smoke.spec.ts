@@ -5,8 +5,8 @@ test.describe('冒烟：应用启动与基本交互', () => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/');
-    // 肉类分类 21 条（与 src/core/catalog.ts 保持一致）
-    await expect(page.locator('.food-card')).toHaveCount(21);
+    // 肉类分类 43 条（与 src/core/catalog.ts 保持一致）
+    await expect(page.locator('.food-card')).toHaveCount(43);
     await expect(page.locator('.tab-btn.active')).toHaveText('肉类');
     expect(errors, `页面 JS 异常: ${errors.join(' | ')}`).toEqual([]);
   });
@@ -17,7 +17,7 @@ test.describe('冒烟：应用启动与基本交互', () => {
     const card = page.locator('.timer-card[data-timer-id="1"]');
     await expect(card).toBeVisible();
     await expect(card).toHaveClass(/running/);
-    await expect(card.locator('.timer-time')).toHaveText('15秒');
+    await expect(card.locator('.timer-time')).toHaveText(/^(14|15)秒$/);
     // 食物网格出现选中角标
     await expect(page.locator('.food-card.selected')).toBeVisible();
   });
@@ -25,7 +25,7 @@ test.describe('冒烟：应用启动与基本交互', () => {
   test('切换分类渲染对应食材', async ({ page }) => {
     await page.goto('/');
     await page.locator('.tab-btn[data-category="seafood"]').click();
-    await expect(page.locator('.food-card')).toHaveCount(10);
+    await expect(page.locator('.food-card')).toHaveCount(22);
     await expect(page.locator('.tab-btn.active')).toHaveText('海鲜');
   });
 });

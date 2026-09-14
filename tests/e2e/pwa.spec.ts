@@ -31,7 +31,7 @@ test.describe('PWA：离线与 Service Worker', () => {
     await page.waitForSelector('.food-card');
     await page.context().setOffline(true);
     await page.reload();
-    await expect(page.locator('.food-card')).toHaveCount(21);
+    await expect(page.locator('.food-card')).toHaveCount(43);
     // 离线状态下仍可交互
     await page.locator('.food-card', { hasText: '毛肚' }).first().click();
     await expect(page.locator('.timer-card')).toHaveCount(1);

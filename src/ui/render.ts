@@ -77,6 +77,10 @@ export class Render {
     const status = hasStatus
       ? `<div class="timer-status" data-status=""><span class="status-label"></span></div>`
       : '';
+    // 手法提示行（仅目录食材且有明确手法时显示）
+    const technique = t.food.technique
+      ? `<div class="timer-technique">🥢 ${escapeHtml(t.food.technique)}</div>`
+      : '';
     const note = t.food.risk
       ? `<div class="timer-desc timer-risk">⚠️ ${escapeHtml(t.food.risk)}</div>`
       : t.food.cues
@@ -96,6 +100,7 @@ export class Render {
                 <button class="btn-delete btn-small" data-id="${t.id}">删除</button>
             </div>
         </div>
+        ${technique}
         ${note}
     `;
     const time = card.querySelector<HTMLElement>('.timer-time')!;
@@ -106,12 +111,24 @@ export class Render {
     return card;
   }
 
-  /** 每帧写时间文本 + 熟度状态（O(1)，无 DOM 查询）；运行中 + 已到期卡片 */
+  /** 每帧写时间文本 + 熟度状态 + 超时分级（O(1)，无 DOM 查询）；运行中 + 已到期卡片 */
   updateTime(id: number, ms: number): void {
     const ref = this.refs.get(id);
     if (!ref) return;
     // ms 为负 = 超时
+    const overtime = ms < 0 ? -ms : 0;
     ref.time.textContent = ms < 0 ? `+${formatMs(-ms)}` : formatMs(ms);
+    // 超时分级：hard=多煮即老（红色警告）/ soft=多煮更入味（中性）
+    if (overtime > 0) {
+      const t = this.store.getTimer(id);
+      if (t?.food.overtime === 'hard' && overtime >= 10_000) {
+        ref.time.classList.add('overtime-hard');
+      } else {
+        ref.time.classList.remove('overtime-hard');
+      }
+    } else {
+      ref.time.classList.remove('overtime-hard');
+    }
     const t = this.store.getTimer(id);
     if (t && t.food.times) {
       const elapsed = t.food.totalMs - ms; // 超时后 elapsed > totalMs
@@ -147,8 +164,15 @@ export class Render {
     if (t.state === 'done') {
       const overtime = -t.remainingMs; // remainingMs 为负 = 超时
       ref.time.textContent = overtime > 0 ? `+${formatMs(overtime)}` : '时间到';
+      // 超时分级：hard=多煮即老（红色警告）
+      if (t.food.overtime === 'hard' && overtime >= 10_000) {
+        ref.time.classList.add('overtime-hard');
+      } else {
+        ref.time.classList.remove('overtime-hard');
+      }
     } else {
       ref.time.textContent = formatMs(t.remainingMs);
+      ref.time.classList.remove('overtime-hard');
     }
     // 初始熟度状态
     if (t.food.times) {

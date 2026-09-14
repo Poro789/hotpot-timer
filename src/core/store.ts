@@ -23,6 +23,12 @@ export interface NewFood {
   cues?: Record<Doneness, string>;
   /** 偏生档安全提示；仅目录食材且有风险时非空 */
   risk?: string;
+  /** 涮煮手法提示（一句话）；仅目录食材且有明确手法时非空 */
+  technique?: string;
+  /** 超时后果：hard=多煮即老（硬超时）/ soft=多煮更入味（软超时）；仅目录食材 */
+  overtime?: 'hard' | 'soft';
+  /** 阶段提示：已过该比例时提醒检查（0~1）；仅目录食材且中途有状态变化时设置 */
+  midpoint?: number;
 }
 
 function makeTimer(
@@ -35,10 +41,25 @@ function makeTimer(
   times?: { rare: number; medium: number; wellDone: number },
   cues?: Record<Doneness, string>,
   risk?: string,
+  technique?: string,
+  overtime?: 'hard' | 'soft',
+  midpoint?: number,
 ): Timer {
   return {
     id,
-    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom, times, cues, risk },
+    food: {
+      baseName,
+      name: displayName,
+      totalMs: timeSec * 1000,
+      desc,
+      custom,
+      times,
+      cues,
+      risk,
+      technique,
+      overtime,
+      midpoint,
+    },
     remainingMs: timeSec * 1000,
     state: 'paused',
     endAt: null,
@@ -114,6 +135,9 @@ export class Store {
       food.times,
       food.cues,
       food.risk,
+      food.technique,
+      food.overtime,
+      food.midpoint,
     );
     this.state.timers.push(timer);
     startTimer(timer, ts);

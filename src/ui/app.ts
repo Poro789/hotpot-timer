@@ -62,7 +62,26 @@ export function boot(): void {
     // 到点流程显式重建：卡片转"时间到" + 到点条目置顶
     // （tick 已直接置位 state，markDone 在此路径上通常不产生结构变更）
     render.forceRebuildTimers();
-    alarm.handleDue(ids, opts);
+    // 同食材合并提醒：按 baseName 分组，多份只报一次
+    const groups = new Map<string, number[]>();
+    for (const id of ids) {
+      const t = store.getTimer(id);
+      if (!t) continue;
+      const key = t.food.baseName;
+      const arr = groups.get(key) ?? [];
+      arr.push(id);
+      groups.set(key, arr);
+    }
+    for (const [baseName, groupIds] of groups) {
+      const t = store.getTimer(groupIds[0]!);
+      const name = t?.food.name ?? baseName;
+      const label = groupIds.length > 1 ? `${name} ×${groupIds.length}` : name;
+      // 单份：正常播报；多份：合并播报（"毛肚 ×2 时间到！"）
+      if (opts.announce) {
+        announce(el.liveRegion, `${label} 时间到！`);
+      }
+      alarm.handleDue(groupIds, { ...opts, announce: false });
+    }
     void saveState(store.snapshot);
   }
 
@@ -75,6 +94,7 @@ export function boot(): void {
           render.updateTime(t.id, liveRemainingMs(t, ts));
         }
       }
+      checkMidpoints();
       handleDue(due, { sound: true, flash: true, announce: true });
     },
     onWake: () => {
@@ -83,6 +103,21 @@ export function boot(): void {
       scheduler.onStateChange(); // 若还有运行中条目，重新武装
     },
   });
+
+  // ---------- 阶段提示（每条目只触发一次） ----------
+  const midpointFired = new Set<number>();
+  function checkMidpoints(): void {
+    for (const t of store.snapshot.timers) {
+      if (t.state !== 'running' || !t.food.midpoint || t.endAtMono === null) continue;
+      if (midpointFired.has(t.id)) continue;
+      const elapsed = ts.mono() - (t.endAtMono - t.food.totalMs);
+      const threshold = t.food.totalMs * t.food.midpoint;
+      if (elapsed >= threshold) {
+        midpointFired.add(t.id);
+        toast.show(`🔍 ${t.food.name} 该检查一下了`);
+      }
+    }
+  }
 
   // ---------- 渲染 ----------
   function renderDoneBanner(): void {
@@ -128,8 +163,11 @@ export function boot(): void {
     times?: { rare: number; medium: number; wellDone: number },
     cues?: Record<string, string>,
     risk?: string,
+    technique?: string,
+    overtime?: 'hard' | 'soft',
+    midpoint?: number,
   ): void {
-    const food: NewFood = { name, timeSec, desc, custom, times, cues, risk };
+    const food: NewFood = { name, timeSec, desc, custom, times, cues, risk, technique, overtime, midpoint };
     store.addFoodTimer(food, ts);
     // 时长卡片上已经看得见，toast 只报菜名，保持一行
     toast.show(`已添加 ${name}`);
@@ -142,7 +180,18 @@ export function boot(): void {
     }
     // 目录食材：从库里找回三档时长与判据（默认按适中档时长计时）
     const hit = findCatalogFood(name);
-    pickFood(name, timeSec, hit?.desc ?? '', false, hit?.times, hit?.cues, hit?.risk || undefined);
+    pickFood(
+      name,
+      timeSec,
+      hit?.desc ?? '',
+      false,
+      hit?.times,
+      hit?.cues,
+      hit?.risk || undefined,
+      hit?.technique,
+      hit?.overtime,
+      hit?.midpoint,
+    );
   };
   render.onRemoveMyFood = (name) => {
     store.removeMyFood(name);

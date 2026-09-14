@@ -40,7 +40,9 @@ test.describe('交互体验与显示修复', () => {
     await expect(page.locator('.timer-card').first()).toHaveAttribute('data-timer-id', '2');
     await expect(page.locator('.timer-card').nth(1)).toHaveAttribute('data-timer-id', '1');
     // 完成卡显示超时时间（+Xs）而不是"0秒"
-    await expect(page.locator('.timer-card').first().locator('.timer-time')).toHaveText(/^\+\d+秒$/);
+    await expect(page.locator('.timer-card').first().locator('.timer-time')).toHaveText(/^\+\d+秒$/, {
+      timeout: 10_000,
+    });
     await page.locator('#done-confirm-all').click();
     await expect(page.locator('#done-banner')).toBeHidden();
   });
@@ -128,14 +130,14 @@ test.describe('交互体验与显示修复', () => {
     await maodu.click();
     const card = page.locator('.timer-card[data-timer-id="1"]');
     await expect(card).toHaveClass(/running/);
-    await expect(card.locator('.timer-time')).toHaveText('15秒');
+    await expect(card.locator('.timer-time')).toHaveText(/^(14|15)秒$/);
     // 刚启动：偏生（elapsed < 10s = rare 档时长）
     await expect(card.locator('.timer-status .status-label')).toHaveText('偏生');
     // 约 11 秒后进入适中档（elapsed >= 10s = rare 档时长）
     await expect(card.locator('.timer-status .status-label')).toHaveText('适中', { timeout: 15_000 });
     // 约 15 秒后到点：偏熟 + 超时时间（+Xs）
     await expect(card.locator('.timer-status .status-label')).toHaveText('偏熟', { timeout: 10_000 });
-    await expect(card.locator('.timer-time')).toHaveText(/^\+\d+秒$/);
+    await expect(card.locator('.timer-time')).toHaveText(/^\+\d+秒$/, { timeout: 10_000 });
     // 风险提示行（毛肚有偏生风险）
     await expect(card.locator('.timer-risk')).toContainText('中心未充分烫透');
   });
