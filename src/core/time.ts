@@ -39,35 +39,44 @@ export function pauseTimer(t: Timer, ts: TimeSource): boolean {
   return true;
 }
 
-/** 运行中条目的实时剩余（毫秒）；非运行中返回 stored remainingMs */
-export function liveRemainingMs(t: Timer, ts: TimeSource): number {
-  if (t.state !== 'running' || t.endAtMono === null) return Math.max(0, t.remainingMs);
-  return Math.max(0, t.endAtMono - ts.mono());
-}
+
 
 /** 推进所有运行中条目（单调钟）。返回刚好到期的 id 列表 */
 export function tickTimers(timers: readonly Timer[], ts: TimeSource): number[] {
   const due: number[] = [];
   for (const t of timers) {
-    if (t.state !== 'running' || t.endAtMono === null) continue;
-    const rem = t.endAtMono - ts.mono();
-    if (rem <= 0) {
-      t.remainingMs = 0;
-      t.state = 'done';
-      t.endAt = null;
-      t.endAtMono = null;
-      t.missed = false;
-      due.push(t.id);
-    } else {
-      t.remainingMs = rem;
+    if (t.state === 'running' && t.endAtMono !== null) {
+      const rem = t.endAtMono - ts.mono();
+      if (rem <= 0) {
+        t.remainingMs = 0;
+        t.state = 'done';
+        t.missed = false;
+        // 保留 endAtMono：到点后继续算超时时间
+        due.push(t.id);
+      } else {
+        t.remainingMs = rem;
+      }
+    } else if (t.state === 'done' && t.endAtMono !== null) {
+      // 已到期：继续算超时（remainingMs 为负）
+      t.remainingMs = t.endAtMono - ts.mono();
     }
   }
   return due;
 }
 
+/** 运行中/已到期条目的实时剩余（毫秒）；已到期返回负数（超时）；非运行中返回 stored remainingMs */
+export function liveRemainingMs(t: Timer, ts: TimeSource): number {
+  if (t.endAtMono === null) return Math.max(0, t.remainingMs);
+  if (t.state === 'running' || t.state === 'done') {
+    return t.endAtMono - ts.mono();
+  }
+  return Math.max(0, t.remainingMs);
+}
+
 /**
  * 页面加载后，把"持久化为运行中"的条目按墙钟结算：
  * 期间已到期的 -> done + missed；未到期 -> 保留剩余时间，等待 reanchorRunning 重锚。
+ * 已 done 的条目：保留 endAt 用于算超时。
  */
 export function settleOnLoad(timers: readonly Timer[], wallNow: number): number[] {
   const missed: number[] = [];
@@ -78,12 +87,15 @@ export function settleOnLoad(timers: readonly Timer[], wallNow: number): number[
       if (rem <= 0) {
         t.remainingMs = 0;
         t.state = 'done';
-        t.endAt = null;
         t.missed = true;
+        // 保留 endAt：用于算超时
         missed.push(t.id);
       } else {
         t.remainingMs = rem;
       }
+    } else if (t.state === 'done' && t.endAt !== null) {
+      // 已到期：结算超时（remainingMs 为负）
+      t.remainingMs = t.endAt - wallNow;
     }
   }
   return missed;

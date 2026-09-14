@@ -71,7 +71,9 @@ export function boot(): void {
     onFrame: () => {
       const due = tickTimers(store.snapshot.timers, ts);
       for (const t of store.snapshot.timers) {
-        if (t.state === 'running') render.updateTime(t.id, liveRemainingMs(t, ts));
+        if (t.state === 'running' || t.state === 'done') {
+          render.updateTime(t.id, liveRemainingMs(t, ts));
+        }
       }
       handleDue(due, { sound: true, flash: true, announce: true });
     },

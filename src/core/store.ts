@@ -135,6 +135,8 @@ export class Store {
         pauseTimer(existing, ts);
       } else if (existing.state === 'done') {
         existing.remainingMs = existing.food.totalMs;
+        existing.endAt = null;
+        existing.endAtMono = null;
         startTimer(existing, ts);
       } else {
         startTimer(existing, ts);
@@ -166,6 +168,8 @@ export class Store {
     } else if (t.state === 'done') {
       t.remainingMs = t.food.totalMs;
       t.missed = false; // "加一份"重新开始：补报标记随之失效
+      t.endAt = null; // 清超时锚点
+      t.endAtMono = null;
       startTimer(t, ts);
     } else {
       startTimer(t, ts);
@@ -191,6 +195,7 @@ export class Store {
    * 调度器判定到期：置为完成。
    * 完成会改变展示顺序（到点条目置顶），因此触发结构重建；
    * 列表通常只有个位数条目，重建开销可忽略。
+   * 保留 endAt/endAtMono：到点后继续算超时时间。
    */
   markDone(ids: readonly number[]): void {
     let changed = false;
@@ -199,9 +204,8 @@ export class Store {
       if (!t || t.state === 'done') continue;
       t.remainingMs = 0;
       t.state = 'done';
-      t.endAt = null;
-      t.endAtMono = null;
       t.missed = false;
+      // 不清 endAt/endAtMono：用于算超时
       changed = true;
     }
     if (changed) this.commit(true);

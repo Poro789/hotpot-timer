@@ -163,9 +163,13 @@ function toPersisted(t: Timer): PersistedTimer {
     id: t.id,
     food: t.food,
     remainingMs:
-      t.state === 'running' && t.endAt !== null ? Math.max(0, t.endAt - Date.now()) : t.remainingMs,
+      t.state === 'running' && t.endAt !== null
+        ? Math.max(0, t.endAt - Date.now())
+        : t.state === 'done' && t.endAt !== null
+          ? t.endAt - Date.now() // 负数 = 超时
+          : t.remainingMs,
     state: t.state,
-    endAt: t.state === 'running' ? t.endAt : null,
+    endAt: t.state === 'running' || t.state === 'done' ? t.endAt : null,
     missed: t.missed,
   };
 }

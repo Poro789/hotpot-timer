@@ -108,7 +108,7 @@ describe('startTimer / pauseTimer', () => {
 });
 
 describe('tickTimers', () => {
-  it('到期的条目置为 done 并返回 id', () => {
+  it('到期的条目置为 done 并返回 id（保留 endAtMono 用于算超时）', () => {
     const ts = new FakeClock();
     const a = makeTimer({ id: 1 });
     const b = makeTimer({ id: 2, remainingMs: 30_000, food: { ...a.food, name: '虾滑' } });
@@ -119,7 +119,20 @@ describe('tickTimers', () => {
     expect(due).toEqual([1]);
     expect(a.state).toBe('done');
     expect(a.remainingMs).toBe(0);
+    expect(a.endAtMono).not.toBeNull(); // 保留：用于算超时
     expect(b.state).toBe('running');
+  });
+
+  it('已 done 条目：继续算超时（remainingMs 为负）', () => {
+    const ts = new FakeClock();
+    const a = makeTimer({ id: 1 });
+    startTimer(a, ts);
+    ts.advance(15_000);
+    tickTimers([a], ts); // 到期
+    ts.advance(5_000); // 超时 5s
+    tickTimers([a], ts);
+    expect(a.state).toBe('done');
+    expect(a.remainingMs).toBe(-5_000);
   });
 
   it('暂停中的条目不参与 tick', () => {
@@ -132,13 +145,21 @@ describe('tickTimers', () => {
 });
 
 describe('settleOnLoad（刷新/重载结算）', () => {
-  it('离开期间已到期的条目 -> done + missed', () => {
+  it('离开期间已到期的条目 -> done + missed（保留 endAt 用于算超时）', () => {
     const t = makeTimer({ state: 'running', endAt: 2_000_000, remainingMs: 5_000 });
     const missed = settleOnLoad([t], 2_000_010); // 现在 > endAt
     expect(missed).toEqual([t.id]);
     expect(t.state).toBe('done');
     expect(t.missed).toBe(true);
-    expect(t.endAt).toBeNull();
+    expect(t.endAt).toBe(2_000_000); // 保留：用于算超时
+    expect(t.remainingMs).toBe(0);
+  });
+
+  it('已 done 条目：结算超时（remainingMs 为负）', () => {
+    const t = makeTimer({ state: 'done', endAt: 2_000_000, remainingMs: 0 });
+    settleOnLoad([t], 2_005_000); // 超时 5s
+    expect(t.remainingMs).toBe(-5_000);
+    expect(t.endAt).toBe(2_000_000);
   });
 
   it('未到期条目保留剩余时间，等待重锚', () => {

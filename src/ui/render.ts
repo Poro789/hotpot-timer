@@ -106,14 +106,15 @@ export class Render {
     return card;
   }
 
-  /** 每帧写时间文本 + 熟度状态（O(1)，无 DOM 查询）；仅运行中卡片 */
+  /** 每帧写时间文本 + 熟度状态（O(1)，无 DOM 查询）；运行中 + 已到期卡片 */
   updateTime(id: number, ms: number): void {
     const ref = this.refs.get(id);
     if (!ref) return;
-    ref.time.textContent = formatMs(ms);
+    // ms 为负 = 超时
+    ref.time.textContent = ms < 0 ? `+${formatMs(-ms)}` : formatMs(ms);
     const t = this.store.getTimer(id);
     if (t && t.food.times) {
-      const elapsed = t.food.totalMs - ms;
+      const elapsed = t.food.totalMs - ms; // 超时后 elapsed > totalMs
       const st = deriveDonenessStatus(elapsed, t.food.times);
       this.applyStatus(ref, st, t);
     }
@@ -142,11 +143,16 @@ export class Render {
     ref.card.classList.toggle('completed', t.state === 'done');
     ref.toggle.textContent =
       t.state === 'done' ? '加一份' : t.state === 'running' ? '暂停' : '继续';
-    // 完成卡显示"时间到"而不是"0秒"；运行中的卡由 rAF 每帧直写
-    ref.time.textContent = t.state === 'done' ? '时间到' : formatMs(t.remainingMs);
+    // 完成卡显示超时时间（+Xs）或"时间到"（刚到期）；运行中的卡由 rAF 每帧直写
+    if (t.state === 'done') {
+      const overtime = -t.remainingMs; // remainingMs 为负 = 超时
+      ref.time.textContent = overtime > 0 ? `+${formatMs(overtime)}` : '时间到';
+    } else {
+      ref.time.textContent = formatMs(t.remainingMs);
+    }
     // 初始熟度状态
     if (t.food.times) {
-      const elapsed = t.state === 'done' ? t.food.totalMs : t.food.totalMs - t.remainingMs;
+      const elapsed = t.food.totalMs - t.remainingMs; // 超时后 elapsed > totalMs
       const st = deriveDonenessStatus(elapsed, t.food.times);
       this.applyStatus(ref, st, t);
     }
