@@ -10,11 +10,11 @@ export interface Food {
   desc: string;
   /** 是否快速计时产生的自定义条目 */
   custom?: boolean;
-  /** 熟度档位（红绿灯）；仅目录食材有 */
-  doneness?: Doneness;
-  /** 该档的目视熟成判据；仅目录食材有 */
-  cue?: string;
-  /** 偏生档安全提示；仅 doneness=rare 且有风险时非空 */
+  /** 三档时长（秒）；仅目录食材有，用于派生熟度状态 */
+  times?: { rare: number; medium: number; wellDone: number };
+  /** 三档熟成判据（目视确认线索）；仅目录食材有 */
+  cues?: Record<Doneness, string>;
+  /** 偏生档安全提示；仅目录食材且有风险时非空 */
   risk?: string;
 }
 
@@ -39,11 +39,37 @@ export interface MyFood {
   timeSec: number;
 }
 
-/** 熟度档位标签（红绿灯）：偏生（绿）/ 适中（黄，默认）/ 偏熟（红） */
-export const DONENESS_LABELS = { rare: '偏生', medium: '适中', wellDone: '偏熟' } as const;
-export type Doneness = keyof typeof DONENESS_LABELS;
-/** 红绿灯顺序（UI 展示顺序 = 时长递增顺序） */
-export const DONENESS_ORDER: readonly Doneness[] = ['rare', 'medium', 'wellDone'];
+/** 熟度档位（目录食材的三档时长键）：偏生 / 适中 / 偏熟 */
+export type Doneness = 'rare' | 'medium' | 'wellDone';
+
+/** 计时中的熟度状态（纯派生值，不持久化） */
+export type DonenessStatus = 'rare' | 'medium' | 'wellDone';
+
+/** 熟度状态标签 */
+export const DONENESS_STATUS_LABELS: Record<DonenessStatus, string> = {
+  rare: '偏生',
+  medium: '适中',
+  wellDone: '偏熟',
+};
+
+/**
+ * 由已过时间派生熟度状态（纯函数，不持久化）：
+ * - 未计时（elapsed=0）-> null（未开始）
+ * - elapsed < rare 档时长 -> 'rare'（偏生）
+ * - rare <= elapsed < medium 档时长 -> 'medium'（适中）
+ * - elapsed >= medium 档时长 -> 'wellDone'（偏熟，含到点与超时）
+ * 自定义/快速计时食材无三档阈值，返回 null。
+ */
+export function deriveDonenessStatus(
+  elapsedMs: number,
+  times: { rare: number; medium: number; wellDone: number } | undefined,
+): DonenessStatus | null {
+  if (!times) return null;
+  if (elapsedMs <= 0) return null;
+  if (elapsedMs < times.rare * 1000) return 'rare';
+  if (elapsedMs < times.medium * 1000) return 'medium';
+  return 'wellDone';
+}
 
 export interface Settings {
   sound: boolean;

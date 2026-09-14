@@ -17,11 +17,11 @@ export interface NewFood {
   timeSec: number;
   desc: string;
   custom?: boolean;
-  /** 熟度档位（红绿灯）；自定义/快速计时无 */
-  doneness?: Doneness;
-  /** 该档的目视判据 */
-  cue?: string;
-  /** 偏生档安全提示（仅 doneness=rare 时有意义） */
+  /** 三档时长（秒）；仅目录食材有，用于派生熟度状态 */
+  times?: { rare: number; medium: number; wellDone: number };
+  /** 三档熟成判据；仅目录食材有 */
+  cues?: Record<Doneness, string>;
+  /** 偏生档安全提示；仅目录食材且有风险时非空 */
   risk?: string;
 }
 
@@ -32,13 +32,13 @@ function makeTimer(
   timeSec: number,
   desc: string,
   custom?: boolean,
-  doneness?: Doneness,
-  cue?: string,
+  times?: { rare: number; medium: number; wellDone: number },
+  cues?: Record<Doneness, string>,
   risk?: string,
 ): Timer {
   return {
     id,
-    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom, doneness, cue, risk },
+    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom, times, cues, risk },
     remainingMs: timeSec * 1000,
     state: 'paused',
     endAt: null,
@@ -111,8 +111,8 @@ export class Store {
       food.timeSec,
       food.desc,
       food.custom,
-      food.doneness,
-      food.cue,
+      food.times,
+      food.cues,
       food.risk,
     );
     this.state.timers.push(timer);

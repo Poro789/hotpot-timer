@@ -8,7 +8,6 @@ import {
   type TimeSource,
 } from '../core/time';
 import { foodDatabase } from '../core/catalog';
-import type { Doneness } from '../core/types';
 import { loadState, saveState, watchExternalChanges } from '../platform/storage';
 import { Scheduler } from '../platform/scheduler';
 import { unlockAudio } from '../platform/audio';
@@ -124,13 +123,13 @@ export function boot(): void {
     timeSec: number,
     desc: string,
     custom: boolean,
-    doneness?: Doneness,
-    cue?: string,
+    times?: { rare: number; medium: number; wellDone: number },
+    cues?: Record<string, string>,
     risk?: string,
   ): void {
-    const food: NewFood = { name, timeSec, desc, custom, doneness, cue, risk };
+    const food: NewFood = { name, timeSec, desc, custom, times, cues, risk };
     store.addFoodTimer(food, ts);
-    // 时长/档位卡片上已经看得见，toast 只报菜名，保持一行
+    // 时长卡片上已经看得见，toast 只报菜名，保持一行
     toast.show(`已添加 ${name}`);
   }
 
@@ -139,13 +138,9 @@ export function boot(): void {
       pickFood(name, timeSec, '', true);
       return;
     }
-    // 目录食材（点卡片空白 = 适中档）：从库里找回 desc 与判据
+    // 目录食材：从库里找回三档时长与判据（默认按适中档时长计时）
     const hit = findCatalogFood(name);
-    pickFood(name, timeSec, hit?.desc ?? '', false, 'medium', hit?.cues.medium, undefined);
-  };
-  render.onPickDoneness = (name, timeSec, doneness, cue, risk) => {
-    const hit = findCatalogFood(name);
-    pickFood(name, timeSec, hit?.desc ?? '', false, doneness, cue, risk || undefined);
+    pickFood(name, timeSec, hit?.desc ?? '', false, hit?.times, hit?.cues, hit?.risk || undefined);
   };
   render.onRemoveMyFood = (name) => {
     store.removeMyFood(name);

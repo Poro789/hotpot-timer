@@ -169,24 +169,31 @@ describe('structureVersion（渲染重建触发器）', () => {
   });
 });
 
-describe('红绿灯熟度档位透传', () => {
-  it('addFoodTimer 携带 doneness/cue/risk', () => {
+describe('三档时长透传', () => {
+  it('addFoodTimer 携带 times/cues/risk', () => {
     const store = new Store(defaultState());
     const t = store.addFoodTimer(
-      { name: '毛肚', timeSec: 10, desc: 'd', doneness: 'rare', cue: '叶片微卷', risk: '中心未透' },
+      {
+        name: '毛肚',
+        timeSec: 15,
+        desc: 'd',
+        times: { rare: 10, medium: 15, wellDone: 25 },
+        cues: { rare: '叶片微卷', medium: '七上八下', wellDone: '卷紧发硬' },
+        risk: '中心未透',
+      },
       ts,
     );
-    expect(store.getTimer(t.id)?.food.doneness).toBe('rare');
-    expect(store.getTimer(t.id)?.food.cue).toBe('叶片微卷');
+    expect(store.getTimer(t.id)?.food.times).toEqual({ rare: 10, medium: 15, wellDone: 25 });
+    expect(store.getTimer(t.id)?.food.cues?.medium).toBe('七上八下');
     expect(store.getTimer(t.id)?.food.risk).toBe('中心未透');
   });
-  it('不传档位时字段为 undefined（自定义/快速计时）', () => {
+  it('不传三档时字段为 undefined（自定义/快速计时）', () => {
     const store = new Store(defaultState());
     const t = store.addFoodTimer({ name: '鲜鸭血', timeSec: 60, desc: '' }, ts);
-    expect(store.getTimer(t.id)?.food.doneness).toBeUndefined();
+    expect(store.getTimer(t.id)?.food.times).toBeUndefined();
     store.addQuickTimer('自定义', 30, ts);
     const q = store.snapshot.timers[1]!;
-    expect(q.food.doneness).toBeUndefined();
+    expect(q.food.times).toBeUndefined();
   });
 });
 
