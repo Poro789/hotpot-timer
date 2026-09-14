@@ -1,6 +1,7 @@
 import {
   DEFAULT_SETTINGS,
   type AppState,
+  type Doneness,
   type Food,
   type MyFood,
   type Settings,
@@ -16,6 +17,12 @@ export interface NewFood {
   timeSec: number;
   desc: string;
   custom?: boolean;
+  /** 熟度档位（红绿灯）；自定义/快速计时无 */
+  doneness?: Doneness;
+  /** 该档的目视判据 */
+  cue?: string;
+  /** 偏生档安全提示（仅 doneness=rare 时有意义） */
+  risk?: string;
 }
 
 function makeTimer(
@@ -25,10 +32,13 @@ function makeTimer(
   timeSec: number,
   desc: string,
   custom?: boolean,
+  doneness?: Doneness,
+  cue?: string,
+  risk?: string,
 ): Timer {
   return {
     id,
-    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom },
+    food: { baseName, name: displayName, totalMs: timeSec * 1000, desc, custom, doneness, cue, risk },
     remainingMs: timeSec * 1000,
     state: 'paused',
     endAt: null,
@@ -101,6 +111,9 @@ export class Store {
       food.timeSec,
       food.desc,
       food.custom,
+      food.doneness,
+      food.cue,
+      food.risk,
     );
     this.state.timers.push(timer);
     startTimer(timer, ts);

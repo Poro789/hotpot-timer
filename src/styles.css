@@ -661,6 +661,78 @@ body {
   font-weight: 700;
 }
 
+/* ============ 红绿灯熟度选择（食材卡片内） ============ */
+.doneness-lights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.light {
+  border: none;
+  border-radius: 6px;
+  padding: 4px 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+  color: #14100d;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+  white-space: nowrap;
+}
+
+.light:active {
+  transform: scale(0.92);
+  filter: brightness(1.2);
+}
+
+/* 绿=偏生 / 黄=适中 / 红=偏熟（颜色语义即红绿灯） */
+.light.d-rare {
+  background: rgba(106, 190, 110, 0.85);
+}
+
+.light.d-medium {
+  background: rgba(242, 169, 59, 0.9);
+}
+
+.light.d-well {
+  background: rgba(224, 74, 51, 0.85);
+  color: #fff;
+}
+
+/* ============ 计时卡片上的熟度徽章 ============ */
+.doneness-badge {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9px;
+  color: #14100d;
+}
+
+.doneness-badge.d-rare {
+  background: rgba(106, 190, 110, 0.85);
+}
+
+.doneness-badge.d-medium {
+  background: rgba(242, 169, 59, 0.9);
+}
+
+.doneness-badge.d-well {
+  background: rgba(224, 74, 51, 0.85);
+  color: #fff;
+}
+
+/* 偏生档风险提示行 */
+.timer-risk {
+  color: var(--chili-red-bright);
+}
+
 /* "我的食材"页的卡片：右上角留白给删除按钮 */
 .food-card-custom {
   padding-right: 34px;

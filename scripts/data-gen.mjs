@@ -5,16 +5,21 @@
  *   node scripts/data-gen.mjs          # 重新生成 catalog.ts
  *   node scripts/data-gen.mjs --check  # 仅校验：CSV 合法且与 catalog.ts 一致（CI 卡点）
  *
- * CSV schema（首行表头，带 BOM 容忍，字段可带双引号）：
- *   Name,Time,Category,ServingTip
- *   "🥩 毛肚","15","肉类","七上八下，口感脆"
+ * CSV schema v2（首行表头，带 BOM 容忍，字段可带双引号）：
+ *   Name,Category,TimeRare,TimeMedium,TimeWellDone,CueRare,CueMedium,CueWellDone,RiskNote,ServingTip
+ *
+ *   三档时长（秒）：红绿灯 = 偏生(绿) / 适中(黄) / 偏熟(红)
+ *   三档判据：每档"用眼睛确认"的熟成线索（颜色/形态/浮起）
+ *   RiskNote：偏生档的安全提示（空 = 偏生无额外风险）
+ *   ServingTip：通用熟度提示（旧列，保留）
  *
  * 校验规则：
- *   - 表头必须恰好为 Name,Time,Category,ServingTip
+ *   - 表头必须恰好为上述 10 列
  *   - Name 非空且全局唯一（含 emoji 前缀）
- *   - Time 为正整数（秒）
  *   - Category 属于：肉类/海鲜类/蔬菜类/豆制品类/丸滑类/经典火锅菜
- *   - 行必须恰好 4 列
+ *   - 三档时长均为正整数（秒），且严格递增：Rare < Medium < WellDone
+ *   - 三档判据均非空（红绿灯必须给出可目视确认的判据）
+ *   - 行必须恰好 10 列
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +47,19 @@ const CATEGORY_LABELS = {
   ball: '丸类',
   other: '其他',
 };
+
+const HEADER = [
+  'Name',
+  'Category',
+  'TimeRare',
+  'TimeMedium',
+  'TimeWellDone',
+  'CueRare',
+  'CueMedium',
+  'CueWellDone',
+  'RiskNote',
+  'ServingTip',
+];
 
 function fail(msg) {
   console.error(`[data-gen] ✗ ${msg}`);
@@ -106,11 +124,20 @@ function renderCatalog(foods) {
     "export type Category = 'meat' | 'seafood' | 'vegetable' | 'bean' | 'ball' | 'other';",
   );
   lines.push('');
+  lines.push('/** 熟度档位：偏生（绿）/ 适中（黄）/ 偏熟（红） */');
+  lines.push("export type Doneness = 'rare' | 'medium' | 'wellDone';");
+  lines.push('');
   lines.push('export interface CatalogFood {');
   lines.push('  name: string;');
-  lines.push('  /** 秒 */');
+  lines.push('  /** 适中档时长（秒）——不选档时的默认值 */');
   lines.push('  time: number;');
   lines.push('  desc: string;');
+  lines.push('  /** 三档时长（秒）：严格递增 rare < medium < wellDone */');
+  lines.push('  times: Record<Doneness, number>;');
+  lines.push('  /** 三档熟成判据（目视确认线索） */');
+  lines.push('  cues: Record<Doneness, string>;');
+  lines.push('  /** 偏生档安全提示；空串 = 无额外风险 */');
+  lines.push('  risk: string;');
   lines.push('}');
   lines.push('');
   lines.push('export const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [');
@@ -123,16 +150,14 @@ function renderCatalog(foods) {
   for (const id of CATEGORY_IDS) {
     lines.push(`  ${id}: [`);
     for (const f of foods[id]) {
-      lines.push(`    { name: ${tsString(f.name)}, time: ${f.time}, desc: ${tsString(f.desc)} },`);
+      lines.push(
+        `    { name: ${tsString(f.name)}, time: ${f.medium}, desc: ${tsString(f.desc)}, ` +
+          `times: { rare: ${f.rare}, medium: ${f.medium}, wellDone: ${f.well} }, ` +
+          `cues: { rare: ${tsString(f.cueRare)}, medium: ${tsString(f.cueMedium)}, wellDone: ${tsString(f.cueWell)} }, ` +
+          `risk: ${tsString(f.risk)} },`,
+      );
     }
     lines.push('  ],');
-  }
-  lines.push('};');
-  lines.push('');
-  lines.push('/** 各分类食材数（界面角标/统计用） */');
-  lines.push('export const FOOD_COUNTS: Record<Category, number> = {');
-  for (const id of CATEGORY_IDS) {
-    lines.push(`  ${id}: foodDatabase.${id}.length,`);
   }
   lines.push('};');
   lines.push('');
@@ -153,52 +178,68 @@ function main() {
     return;
   }
   const header = rows[0].map((h) => h.trim());
-  const expectedHeader = ['Name', 'Time', 'Category', 'ServingTip'];
-  if (JSON.stringify(header) !== JSON.stringify(expectedHeader)) {
-    fail(`表头不符：期望 ${expectedHeader.join(',')}，实际 ${header.join(',')}`);
+  if (JSON.stringify(header) !== JSON.stringify(HEADER)) {
+    fail(`表头不符：期望 ${HEADER.join(',')}，实际 ${header.join(',')}`);
     return;
   }
 
   const foods = Object.fromEntries(CATEGORY_IDS.map((id) => [id, []]));
   const seen = new Map();
   let errors = 0;
+  const err = (lineNo, msg) => {
+    console.error(`[data-gen] ✗ 第 ${lineNo} 行 ${msg}`);
+    errors++;
+  };
 
   rows.slice(1).forEach((row, i) => {
     const lineNo = i + 2;
-    const [name, time, category, desc = ''] = row;
-    if (row.length !== 4) {
-      console.error(`[data-gen] ✗ 第 ${lineNo} 行列数 ${row.length} ≠ 4`);
-      errors++;
+    if (row.length !== HEADER.length) {
+      err(lineNo, `列数 ${row.length} ≠ ${HEADER.length}`);
       return;
     }
+    const [name, category, tRare, tMed, tWell, cueRare, cueMed, cueWell, risk, desc] = row;
     const n = (name ?? '').trim();
     if (!n) {
-      console.error(`[data-gen] ✗ 第 ${lineNo} 行 Name 为空`);
-      errors++;
+      err(lineNo, 'Name 为空');
       return;
     }
     if (seen.has(n)) {
-      console.error(
-        `[data-gen] ✗ 第 ${lineNo} 行 Name 重复：${n}（首次出现于第 ${seen.get(n)} 行）`,
-      );
-      errors++;
+      err(lineNo, `Name 重复：${n}（首次出现于第 ${seen.get(n)} 行）`);
       return;
     }
     seen.set(n, lineNo);
-    if (!/^\d+$/.test((time ?? '').trim()) || Number(time) <= 0) {
-      console.error(
-        `[data-gen] ✗ 第 ${lineNo} 行 Time 非法：${JSON.stringify(time)}（需正整数秒）`,
-      );
-      errors++;
-      return;
-    }
     const id = CATEGORY_MAP[category];
     if (!id) {
-      console.error(`[data-gen] ✗ 第 ${lineNo} 行 Category 非法：${JSON.stringify(category)}`);
-      errors++;
+      err(lineNo, `Category 非法：${JSON.stringify(category)}`);
       return;
     }
-    foods[id].push({ name: n, time: Number(time), desc: (desc ?? '').trim() });
+    const times = [tRare, tMed, tWell].map((t) => (t ?? '').trim());
+    const bad = times.find((t) => !/^\d+$/.test(t) || Number(t) <= 0);
+    if (bad !== undefined) {
+      err(lineNo, `时长非法：${JSON.stringify(bad)}（三档均需正整数秒）`);
+      return;
+    }
+    const [rare, medium, well] = times.map(Number);
+    if (!(rare < medium && medium < well)) {
+      err(lineNo, `三档时长必须严格递增：rare(${rare}) < medium(${medium}) < wellDone(${well})`);
+      return;
+    }
+    const cues = [cueRare, cueMed, cueWell].map((c) => (c ?? '').trim());
+    if (cues.some((c) => !c)) {
+      err(lineNo, '三档判据均不能为空（红绿灯必须给出目视判据）');
+      return;
+    }
+    foods[id].push({
+      name: n,
+      rare,
+      medium,
+      well,
+      cueRare: cues[0],
+      cueMedium: cues[1],
+      cueWell: cues[2],
+      risk: (risk ?? '').trim(),
+      desc: (desc ?? '').trim(),
+    });
   });
 
   if (errors > 0) {

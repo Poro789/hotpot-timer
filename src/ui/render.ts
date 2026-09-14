@@ -1,5 +1,5 @@
 import { displayOrder, type Store } from '../core/store';
-import type { Timer } from '../core/types';
+import { DONENESS_LABELS, DONENESS_ORDER, type Doneness, type Timer } from '../core/types';
 import { formatMs } from '../core/time';
 import { CATEGORIES, foodDatabase, type Category } from '../core/catalog';
 import { escapeHtml } from './html';
@@ -12,6 +12,13 @@ export interface TimerRefs {
 }
 
 export type CategoryTab = Category | 'myfoods';
+
+/** 红绿灯档位 class（绿/黄/红） */
+const DONENESS_CLASS: Record<Doneness, string> = {
+  rare: 'd-rare',
+  medium: 'd-medium',
+  wellDone: 'd-well',
+};
 
 /**
  * 渲染层：
@@ -66,9 +73,19 @@ export class Render {
     const card = document.createElement('div');
     card.className = 'timer-card';
     card.dataset.timerId = String(t.id);
+    // 熟度徽章 + 判据/风险提示（仅目录食材有档位信息）
+    const badge = t.food.doneness
+      ? `<span class="doneness-badge ${DONENESS_CLASS[t.food.doneness]}">${escapeHtml(DONENESS_LABELS[t.food.doneness])}</span>`
+      : '';
+    const note = t.food.risk
+      ? `<div class="timer-desc timer-risk">⚠️ ${escapeHtml(t.food.risk)}</div>`
+      : t.food.cue
+        ? `<div class="timer-desc">👁 ${escapeHtml(t.food.cue)}</div>`
+        : `<div class="timer-desc">${escapeHtml(t.food.desc || '')}</div>`;
     card.innerHTML = `
         <div class="timer-card-header">
             <h3 class="timer-food-name">${escapeHtml(t.food.name)}</h3>
+            ${badge}
         </div>
         <div class="timer-card-body">
             <div class="timer-info">
@@ -79,7 +96,7 @@ export class Render {
                 <button class="btn-delete btn-small" data-id="${t.id}">删除</button>
             </div>
         </div>
-        <div class="timer-desc">${escapeHtml(t.food.desc || '')}</div>
+        ${note}
     `;
     const time = card.querySelector<HTMLElement>('.timer-time')!;
     const toggle = card.querySelector<HTMLButtonElement>('.btn-toggle')!;
@@ -147,6 +164,7 @@ export class Render {
     for (const food of foods) {
       const timeSec = 'time' in food ? food.time : food.timeSec;
       const count = counts.get(food.name) ?? 0;
+      const catalog = 'times' in food ? food : null;
       const card = document.createElement('div');
       card.className = 'food-card' + (isMyFoods ? ' food-card-custom' : '');
       card.dataset.name = food.name;
@@ -157,10 +175,20 @@ export class Render {
         card.classList.add('selected');
         card.setAttribute('aria-pressed', 'true');
       }
+      // 目录食材：红绿灯三档（点档=按该档时长直接开计时；点卡片空白=适中档）
+      const lights = !catalog
+        ? ''
+        : `<div class="doneness-lights" role="group" aria-label="熟度选择">
+            ${DONENESS_ORDER.map((d) => {
+              const sec = catalog.times[d];
+              return `<button class="light ${DONENESS_CLASS[d]}" data-doneness="${d}" data-time="${sec}" type="button" title="${escapeHtml(catalog.cues[d])}${catalog.risk && d === 'rare' ? '｜' + escapeHtml(catalog.risk) : ''}" aria-label="${DONENESS_LABELS[d]} ${formatMs(sec * 1000)}">${formatMs(sec * 1000)}</button>`;
+            }).join('')}
+          </div>`;
       card.innerHTML = `
         ${count > 1 ? `<div class="food-count-badge">${count}</div>` : ''}
         <div class="food-name">${escapeHtml(food.name)}</div>
         <div class="food-time">时长: <span>${formatMs(timeSec * 1000)}</span></div>
+        ${lights}
         ${isMyFoods ? '<button class="food-remove-btn" title="删除该食材" aria-label="删除该食材">✕</button>' : ''}
       `;
       if (isMyFoods) {
@@ -175,25 +203,60 @@ export class Render {
     }
   }
 
-  /** 由 app 注入：点"我的食材"卡片=开计时；✕=从库中移除 */
+  /** 由 app 注入：点"我的食材"卡片=开计时；✕=从库中移除；点目录卡片=适中档；点红绿灯=对应档 */
   onRemoveMyFood: ((name: string) => void) | null = null;
   onPickFood: ((name: string, timeSec: number, desc: string, custom: boolean) => void) | null =
     null;
+  onPickDoneness:
+    | ((name: string, timeSec: number, doneness: Doneness, cue: string, risk: string) => void)
+    | null = null;
 
   /** 食物网格统一事件委托（含键盘可达性） */
   attachFoodGrid(): void {
     this.el.foodGrid.addEventListener('click', (e) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>('.food-card');
-      if (!card || (e.target as HTMLElement).closest('.food-remove-btn')) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('.food-remove-btn')) return;
+      const light = target.closest<HTMLButtonElement>('.light');
+      if (light) {
+        e.stopPropagation();
+        this.pickLight(light);
+        return;
+      }
+      const card = target.closest<HTMLElement>('.food-card');
+      if (!card) return;
       this.pickFromCard(card);
     });
     this.el.foodGrid.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
-      const card = (e.target as HTMLElement).closest<HTMLElement>('.food-card');
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('light')) {
+        e.preventDefault();
+        this.pickLight(target as HTMLButtonElement);
+        return;
+      }
+      const card = target.closest<HTMLElement>('.food-card');
       if (!card) return;
       e.preventDefault();
       this.pickFromCard(card);
     });
+  }
+
+  private pickLight(btn: HTMLButtonElement): void {
+    const card = btn.closest<HTMLElement>('.food-card');
+    const name = card?.dataset.name ?? '';
+    const time = parseInt(btn.dataset.time ?? '0', 10);
+    const d = btn.dataset.doneness as Doneness | undefined;
+    if (!name || !(time > 0) || !d || !this.onPickDoneness) return;
+    const food = this.findCatalogFood(name);
+    this.onPickDoneness(name, time, d, food?.cues[d] ?? '', d === 'rare' ? (food?.risk ?? '') : '');
+  }
+
+  private findCatalogFood(name: string) {
+    for (const cat of Object.keys(foodDatabase) as Category[]) {
+      const hit = foodDatabase[cat].find((f) => f.name === name);
+      if (hit) return hit;
+    }
+    return undefined;
   }
 
   private pickFromCard(card: HTMLElement): void {

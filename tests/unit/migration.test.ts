@@ -136,13 +136,15 @@ describe('migrate（持久化迁移链）', () => {
     expect(s!.nextTimerId).toBe(10);
   });
 
-  it('settings 严格消毒：脏值回退默认，不产生半真半假状态', () => {
+  it('settings 严格消毒：脏值回退默认，不产生半真半假状态（旧字段 vibrate/systemNotify 直接丢弃）', () => {
     const s = migrate({
       version: 3,
       timers: [],
       settings: { sound: 'no', vibrate: 1, systemNotify: null, volume: 42, extra: 'x' },
     });
     expect(s!.settings).toEqual({ ...DEFAULT_SETTINGS }); // 全部回退
+    expect('vibrate' in s!.settings).toBe(false);
+    expect('systemNotify' in s!.settings).toBe(false);
   });
 
   it('settings 合法值保留；volume 越界视为脏数据回退默认', () => {
@@ -153,8 +155,6 @@ describe('migrate（持久化迁移链）', () => {
     });
     expect(s!.settings).toEqual({
       sound: false,
-      vibrate: false,
-      systemNotify: true,
       volume: 0.7,
       installDismissed: false,
     });

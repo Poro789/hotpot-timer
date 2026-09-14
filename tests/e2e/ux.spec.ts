@@ -119,6 +119,31 @@ test.describe('交互体验与显示修复', () => {
     expect(iconHref).toBe('./icon-192.png');
   });
 
+  test('红绿灯三档：点档按该档时长开计时并显示徽章；点卡片=适中档', async ({ page }) => {
+    await page.goto('/');
+    const maodu = page.locator('.food-card', { hasText: '毛肚' }).first();
+    // 三档时长 10秒/15秒/25秒（绿/黄/红）
+    await expect(maodu.locator('.light')).toHaveCount(3);
+    await expect(maodu.locator('.light.d-rare')).toHaveText('10秒');
+    await expect(maodu.locator('.light.d-medium')).toHaveText('15秒');
+    await expect(maodu.locator('.light.d-well')).toHaveText('25秒');
+    // 点偏生档 -> 10秒 + 偏生徽章 + 风险提示
+    await maodu.locator('.light.d-rare').click();
+    const card = page.locator('.timer-card[data-timer-id="1"]');
+    await expect(card).toHaveClass(/running/);
+    await expect(card.locator('.timer-time')).toHaveText('10秒');
+    await expect(card.locator('.doneness-badge')).toHaveText('偏生');
+    await expect(card.locator('.timer-risk')).toContainText('中心未充分烫透');
+    // 点卡片空白（非档位按钮）= 适中档 15秒
+    await maodu.locator('.food-name').click();
+    const card2 = page.locator('.timer-card[data-timer-id="2"]');
+    await expect(card2.locator('.timer-time')).toHaveText('15秒');
+    await expect(card2.locator('.doneness-badge')).toHaveText('适中');
+    // 适中档无风险提示行，显示判据
+    await expect(card2.locator('.timer-risk')).toHaveCount(0);
+    await expect(card2.locator('.timer-desc')).toContainText('七上八下');
+  });
+
   test('全局按钮单行显示不折行', async ({ page }) => {
     await page.goto('/');
     // 守锅按钮已按需求移除，全局控制只剩两个

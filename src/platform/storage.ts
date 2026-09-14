@@ -102,14 +102,12 @@ function parseMyFoods(raw: unknown): MyFood[] {
     : [];
 }
 
-/** 设置项严格消毒：类型不符/越界一律回退默认值（损坏存档不能产生半真半假的状态） */
+/** 设置项严格消毒：类型不符/越界一律回退默认值（损坏存档不能产生半真半假的状态；旧存档的 vibrate/systemNotify 字段直接丢弃） */
 function parseSettings(raw: unknown): Settings {
   const s: Settings = { ...DEFAULT_SETTINGS };
   if (typeof raw !== 'object' || raw === null) return s;
   const o = raw as Record<string, unknown>;
   if (typeof o.sound === 'boolean') s.sound = o.sound;
-  if (typeof o.vibrate === 'boolean') s.vibrate = o.vibrate;
-  if (typeof o.systemNotify === 'boolean') s.systemNotify = o.systemNotify;
   if (typeof o.installDismissed === 'boolean') s.installDismissed = o.installDismissed;
   // 越界音量视为脏数据（回退默认 0.3），而不是静默 clamp 成 0 或 1
   if (typeof o.volume === 'number' && o.volume >= 0 && o.volume <= 1) {

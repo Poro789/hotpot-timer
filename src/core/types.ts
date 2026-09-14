@@ -10,6 +10,12 @@ export interface Food {
   desc: string;
   /** 是否快速计时产生的自定义条目 */
   custom?: boolean;
+  /** 熟度档位（红绿灯）；仅目录食材有 */
+  doneness?: Doneness;
+  /** 该档的目视熟成判据；仅目录食材有 */
+  cue?: string;
+  /** 偏生档安全提示；仅 doneness=rare 且有风险时非空 */
+  risk?: string;
 }
 
 export type TimerState = 'running' | 'paused' | 'done';
@@ -33,22 +39,22 @@ export interface MyFood {
   timeSec: number;
 }
 
+/** 熟度档位标签（红绿灯）：偏生（绿）/ 适中（黄，默认）/ 偏熟（红） */
+export const DONENESS_LABELS = { rare: '偏生', medium: '适中', wellDone: '偏熟' } as const;
+export type Doneness = keyof typeof DONENESS_LABELS;
+/** 红绿灯顺序（UI 展示顺序 = 时长递增顺序） */
+export const DONENESS_ORDER: readonly Doneness[] = ['rare', 'medium', 'wellDone'];
+
 export interface Settings {
   sound: boolean;
   /** 0..1 */
   volume: number;
-  /** @deprecated 震动功能已移除，字段保留仅为旧存档兼容（无 UI、无行为） */
-  vibrate: boolean;
-  /** @deprecated 系统通知功能已移除，字段保留仅为旧存档兼容（无 UI、无行为） */
-  systemNotify: boolean;
   installDismissed: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   volume: 0.3,
-  vibrate: false,
-  systemNotify: false,
   installDismissed: false,
 };
 

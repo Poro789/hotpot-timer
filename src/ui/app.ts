@@ -8,6 +8,7 @@ import {
   type TimeSource,
 } from '../core/time';
 import { foodDatabase } from '../core/catalog';
+import type { Doneness } from '../core/types';
 import { loadState, saveState, watchExternalChanges } from '../platform/storage';
 import { Scheduler } from '../platform/scheduler';
 import { unlockAudio } from '../platform/audio';
@@ -110,10 +111,26 @@ export function boot(): void {
   }
 
   // ---------- 意图接线 ----------
-  function pickFood(name: string, timeSec: number, desc: string, custom: boolean): void {
-    const food: NewFood = { name, timeSec, desc, custom };
+  function findCatalogFood(name: string) {
+    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
+      const hit = foodDatabase[cat].find((f) => f.name === name);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  function pickFood(
+    name: string,
+    timeSec: number,
+    desc: string,
+    custom: boolean,
+    doneness?: Doneness,
+    cue?: string,
+    risk?: string,
+  ): void {
+    const food: NewFood = { name, timeSec, desc, custom, doneness, cue, risk };
     store.addFoodTimer(food, ts);
-    // 时长卡片上已经看得见，toast 只报菜名，保持一行
+    // 时长/档位卡片上已经看得见，toast 只报菜名，保持一行
     toast.show(`已添加 ${name}`);
   }
 
@@ -122,16 +139,13 @@ export function boot(): void {
       pickFood(name, timeSec, '', true);
       return;
     }
-    // 目录食材：从库里找回完整 desc（卡片只带 name/time）
-    let found = '';
-    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
-      const hit = foodDatabase[cat].find((f) => f.name === name);
-      if (hit) {
-        found = hit.desc;
-        break;
-      }
-    }
-    pickFood(name, timeSec, found, false);
+    // 目录食材（点卡片空白 = 适中档）：从库里找回 desc 与判据
+    const hit = findCatalogFood(name);
+    pickFood(name, timeSec, hit?.desc ?? '', false, 'medium', hit?.cues.medium, undefined);
+  };
+  render.onPickDoneness = (name, timeSec, doneness, cue, risk) => {
+    const hit = findCatalogFood(name);
+    pickFood(name, timeSec, hit?.desc ?? '', false, doneness, cue, risk || undefined);
   };
   render.onRemoveMyFood = (name) => {
     store.removeMyFood(name);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CATEGORIES, FOOD_COUNTS, foodDatabase } from '../../src/core/catalog';
+import { CATEGORIES, foodDatabase } from '../../src/core/catalog';
 
 describe('食材目录（数据完整性）', () => {
   it('六个分类齐全且非空', () => {
@@ -30,9 +30,23 @@ describe('食材目录（数据完整性）', () => {
     }
   });
 
-  it('FOOD_COUNTS 与实际条目数一致', () => {
+  it('三档时长严格递增，time 等于适中档', () => {
     for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
-      expect(FOOD_COUNTS[cat]).toBe(foodDatabase[cat].length);
+      for (const food of foodDatabase[cat]) {
+        const { rare, medium, wellDone } = food.times;
+        expect(rare < medium && medium < wellDone, `${food.name} 三档未递增`).toBe(true);
+        expect(food.time, `${food.name} time 应等于适中档`).toBe(medium);
+      }
+    }
+  });
+
+  it('三档判据均非空', () => {
+    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
+      for (const food of foodDatabase[cat]) {
+        for (const cue of Object.values(food.cues)) {
+          expect(cue.trim().length, `${food.name} 判据为空`).toBeGreaterThan(0);
+        }
+      }
     }
   });
 });

@@ -169,6 +169,27 @@ describe('structureVersion（渲染重建触发器）', () => {
   });
 });
 
+describe('红绿灯熟度档位透传', () => {
+  it('addFoodTimer 携带 doneness/cue/risk', () => {
+    const store = new Store(defaultState());
+    const t = store.addFoodTimer(
+      { name: '毛肚', timeSec: 10, desc: 'd', doneness: 'rare', cue: '叶片微卷', risk: '中心未透' },
+      ts,
+    );
+    expect(store.getTimer(t.id)?.food.doneness).toBe('rare');
+    expect(store.getTimer(t.id)?.food.cue).toBe('叶片微卷');
+    expect(store.getTimer(t.id)?.food.risk).toBe('中心未透');
+  });
+  it('不传档位时字段为 undefined（自定义/快速计时）', () => {
+    const store = new Store(defaultState());
+    const t = store.addFoodTimer({ name: '鲜鸭血', timeSec: 60, desc: '' }, ts);
+    expect(store.getTimer(t.id)?.food.doneness).toBeUndefined();
+    store.addQuickTimer('自定义', 30, ts);
+    const q = store.snapshot.timers[1]!;
+    expect(q.food.doneness).toBeUndefined();
+  });
+});
+
 describe('displayOrder（到点条目置顶）', () => {
   it('完成条目排在最前，其余保持原序（稳定）', () => {
     const a = timerWith('毛肚', '毛肚', { id: 1, state: 'running' });
