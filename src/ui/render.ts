@@ -115,9 +115,9 @@ export class Render {
   updateTime(id: number, ms: number): void {
     const ref = this.refs.get(id);
     if (!ref) return;
-    // ms 为负 = 超时
+    // ms 为负 = 超时；刚到期（0 <= ms < 1s）显示"时间到"，避免"0秒 -> +0秒"多出一秒
     const overtime = ms < 0 ? -ms : 0;
-    ref.time.textContent = ms < 0 ? `+${formatMs(-ms)}` : formatMs(ms);
+    ref.time.textContent = ms < 0 ? `+${formatMs(-ms)}` : ms < 1000 ? '时间到' : formatMs(ms);
     // 超时分级：hard=多煮即老（红色警告）/ soft=多煮更入味（中性）
     if (overtime > 0) {
       const t = this.store.getTimer(id);
@@ -204,8 +204,11 @@ export class Render {
   renderFoods(category: CategoryTab): void {
     const isMyFoods = category === 'myfoods';
     const foods = isMyFoods
-      ? this.store.snapshot.myFoods
-      : (foodDatabase[category as Category] ?? []);
+      ? [...this.store.snapshot.myFoods]
+      : [...(foodDatabase[category as Category] ?? [])];
+    // 按时长升序排序（短的在前）
+    const timeOf = (f: (typeof foods)[number]) => ('time' in f ? f.time : f.timeSec);
+    foods.sort((a, b) => timeOf(a) - timeOf(b));
 
     // 份数角标：从计时列表实时派生（删除后自动回退，不再维护独立计数器）
     const counts = new Map<string, number>();

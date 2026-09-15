@@ -45,19 +45,23 @@ function makeTimer(over: Partial<Timer> = {}): Timer {
 }
 
 describe('formatMs', () => {
-  it('不足一分钟显示秒', () => {
+  it('不足一分钟：一位小数（0.1s 精度）', () => {
     expect(formatMs(15_000)).toBe('15秒');
     expect(formatMs(0)).toBe('0秒');
+    expect(formatMs(14_300)).toBe('14.3秒');
+    expect(formatMs(14_350)).toBe('14.4秒'); // 向上取整到 0.1s
+    expect(formatMs(999)).toBe('1秒'); // 0.999s -> 1.0 -> "1秒"
+    expect(formatMs(500)).toBe('0.5秒');
   });
-  it('向下取整：到点前可见 0秒', () => {
-    expect(formatMs(14_999)).toBe('14秒');
-    expect(formatMs(999)).toBe('0秒');
-    expect(formatMs(60_001)).toBe('1分');
+  it('向上取整：到点前不出现 0秒', () => {
+    expect(formatMs(14_999)).toBe('15秒');
+    expect(formatMs(60_001)).toBe('1分1秒');
   });
-  it('超过一分钟显示分秒', () => {
+  it('超过一分钟：整数分秒（无小数）', () => {
     expect(formatMs(90_000)).toBe('1分30秒');
     expect(formatMs(600_000)).toBe('10分');
     expect(formatMs(120_000)).toBe('2分');
+    expect(formatMs(60_500)).toBe('1分1秒'); // 60.5s -> ceil 61s
   });
 });
 

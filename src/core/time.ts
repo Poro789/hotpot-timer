@@ -11,12 +11,22 @@ export const systemTime: TimeSource = {
   mono: () => performance.now(),
 };
 
-/** 15000 -> "15秒"；90000 -> "1分30秒"；600000 -> "10分"（向下取整：14.9s 显示 14秒，到点前可见 0秒） */
+/**
+ * 计时显示（向上取整到 0.1 秒，到点前不出现 0秒）：
+ * - < 60s：显示一位小数，如 "14.3秒"
+ * - >= 60s：整数分秒（分钟级精度足够，且避免宽度溢出），如 "1分30秒"、"10分"
+ */
 export function formatMs(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  if (total < 60) return `${total}秒`;
-  const min = Math.floor(total / 60);
-  const sec = total % 60;
+  const total = Math.max(0, ms);
+  if (total < 60_000) {
+    const tenth = Math.ceil(total / 100); // 0.1s 位，向上取整
+    const sec = Math.floor(tenth / 10);
+    const d = tenth % 10;
+    return d === 0 ? `${sec}秒` : `${sec}.${d}秒`;
+  }
+  const totalSec = Math.ceil(total / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
   return sec === 0 ? `${min}分` : `${min}分${sec}秒`;
 }
 
@@ -38,8 +48,6 @@ export function pauseTimer(t: Timer, ts: TimeSource): boolean {
   t.endAtMono = null;
   return true;
 }
-
-
 
 /** 推进所有运行中条目（单调钟）。返回刚好到期的 id 列表 */
 export function tickTimers(timers: readonly Timer[], ts: TimeSource): number[] {
