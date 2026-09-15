@@ -33,6 +33,7 @@ export function collectElements() {
     updateBtn: req<HTMLButtonElement>('update-btn'),
     setSound: req<HTMLButtonElement>('set-sound'),
     setVolume: req<HTMLInputElement>('set-volume'),
+    footerVersion: req<HTMLParagraphElement>('footer-version'),
   };
 }
 

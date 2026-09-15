@@ -1,7 +1,7 @@
 {
   "name": "hotpot-timer",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "川渝火锅涮煮计时器 — 点一下食材，到点必响",
   "scripts": {

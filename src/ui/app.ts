@@ -286,7 +286,7 @@ export function boot(): void {
 
   // 设置 / PWA
   initSettings(store, el, { toast: (m) => toast.show(m) });
-  initPwa(store, el, { toast: (m) => toast.show(m) });
+  initPwa(store, el);
 
   // ---------- 订阅：持久化 + 视图 + 调度 + 亮屏 ----------
   let lastStructural = -1;
@@ -327,6 +327,7 @@ export function boot(): void {
   window.addEventListener('beforeunload', () => void saveState(store.snapshot));
 
   // ---------- 启动 ----------
+  el.footerVersion.textContent = `v${import.meta.env.APP_VERSION} · ${import.meta.env.APP_BUILD_DATE}`;
   el.myFoodsPanel.style.display = 'none';
   el.customTimeChips
     .querySelectorAll<HTMLButtonElement>('.time-chip')

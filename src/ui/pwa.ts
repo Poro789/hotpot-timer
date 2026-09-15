@@ -15,7 +15,7 @@ function getBip(): BeforeInstallPromptEvent | undefined {
  * file:// 或非 http(s) 环境下自动跳过 SW（需要安全上下文），应用降级为普通网页。
  * iOS Safari 无 beforeinstallprompt：不展示横幅，走"分享→添加到主屏幕"。
  */
-export function initPwa(store: Store, el: Elements, deps: { toast: (msg: string) => void }): void {
+export function initPwa(store: Store, el: Elements): void {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
@@ -29,7 +29,6 @@ export function initPwa(store: Store, el: Elements, deps: { toast: (msg: string)
             if (nw.state === 'installed' && navigator.serviceWorker.controller && !announced) {
               announced = true;
               el.updateBanner.hidden = false;
-              deps.toast('发现新版本，点击底部提示刷新');
             }
           });
         });

@@ -3,6 +3,7 @@
   "short_name": "火锅计时",
   "description": "川渝火锅涮煮计时：点一下食材，到点必响。",
   "id": "hotpot-timer",
+  "version": "1.1.0",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -3,6 +3,11 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+/** 版本号与构建日期：从 package.json 读取，注入为 import.meta.env.APP_* */
+const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8')) as { version: string };
+const APP_VERSION = pkg.version;
+const APP_BUILD_DATE = new Date().toISOString().slice(0, 10);
+
 /**
  * 开发时移除严格 CSP meta：
  * 生产页面零内联脚本、零远程资源；但 Vite dev 的 HMR 依赖
@@ -67,6 +72,10 @@ function stampSwBuildId(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [stripCspInDev(), stampSwBuildId()],
+  define: {
+    'import.meta.env.APP_VERSION': JSON.stringify(APP_VERSION),
+    'import.meta.env.APP_BUILD_DATE': JSON.stringify(APP_BUILD_DATE),
+  },
   build: {
     rollupOptions: {
       output: {

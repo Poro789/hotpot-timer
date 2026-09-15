@@ -1083,6 +1083,13 @@ body {
   opacity: 0.75;
 }
 
+.footer-version {
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  opacity: 0.55;
+}
+
 /* ============ 响应式 ============ */
 @media (max-width: 360px) {
   .header h1 {
