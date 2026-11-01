@@ -64,6 +64,8 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 
 ## 已知取舍（不是待修的 bug）
 
-- `overtime` 目前 165 项 `hard`、0 项 `soft`：`soft` 分支是死数据，慢煨类要不要改标 `soft` 属口味决定。
+- `overtime` 分布：113 项 `hard`（涮烫类，多煮即老 → 超时 10s 起红色脉冲）+ 53 项 `soft`
+  （凡标了 `midpoint` 的久煨类，多煮更入味 → 超时不闪红）。要改标前先想清楚视觉反馈：
+  `soft` 与未标注食材超时都不报警，只有 `hard` 报警。
 - 到点确认面板（`.done-banner`，固定底部）与计时卡片信息重复：功能上是逐条「知道了」，暂不重构。
 - 页面被系统挂起时无法响铃，回到前台补报——纯前端的物理上限，见 README「平台限制」。
