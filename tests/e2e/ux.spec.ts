@@ -153,9 +153,11 @@ test.describe('交互体验与显示修复', () => {
 
   test('食材列表按时长升序排序（短的在前）', async ({ page }) => {
     await page.goto('/');
-    const times = await page.locator('.food-card').evaluateAll((cards) =>
-      cards.map((c) => parseInt((c as HTMLElement).dataset.time ?? '0', 10)),
-    );
+    const times = await page
+      .locator('.food-card')
+      .evaluateAll((cards) =>
+        cards.map((c) => parseInt((c as HTMLElement).dataset.time ?? '0', 10)),
+      );
     expect(times.length).toBeGreaterThan(0);
     const sorted = [...times].sort((a, b) => a - b);
     expect(times).toEqual(sorted);

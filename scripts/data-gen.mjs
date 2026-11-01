@@ -143,7 +143,7 @@ function renderCatalog(foods) {
   lines.push('  risk: string;');
   lines.push('  /** 涮煮手法提示（一句话）；有明确手法时非空 */');
   lines.push('  technique?: string;');
-  lines.push("  /** 超时后果：hard=多煮即老 / soft=多煮更入味 */");
+  lines.push('  /** 超时后果：hard=多煮即老 / soft=多煮更入味 */');
   lines.push("  overtime?: 'hard' | 'soft';");
   lines.push('  /** 阶段提示：已过该比例时提醒检查（0~1） */');
   lines.push('  midpoint?: number;');
@@ -213,7 +213,21 @@ function main() {
       err(lineNo, `列数 ${row.length} ≠ ${HEADER.length}`);
       return;
     }
-    const [name, category, tRare, tMed, tWell, cueRare, cueMed, cueWell, risk, desc, technique, overtime, midpoint] = row;
+    const [
+      name,
+      category,
+      tRare,
+      tMed,
+      tWell,
+      cueRare,
+      cueMed,
+      cueWell,
+      risk,
+      desc,
+      technique,
+      overtime,
+      midpoint,
+    ] = row;
     const n = (name ?? '').trim();
     if (!n) {
       err(lineNo, 'Name 为空');
@@ -253,7 +267,11 @@ function main() {
     const midpointVal = (midpoint ?? '').trim();
     let midpointNum;
     if (midpointVal) {
-      if (!/^\d+(\.\d+)?$/.test(midpointVal) || Number(midpointVal) <= 0 || Number(midpointVal) >= 1) {
+      if (
+        !/^\d+(\.\d+)?$/.test(midpointVal) ||
+        Number(midpointVal) <= 0 ||
+        Number(midpointVal) >= 1
+      ) {
         err(lineNo, `Midpoint 非法：${JSON.stringify(midpointVal)}（须为 0~1 小数/空）`);
         return;
       }

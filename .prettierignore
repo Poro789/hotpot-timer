@@ -2,3 +2,5 @@ dist
 node_modules
 package-lock.json
 public
+# 生成物：格式由 scripts/data-gen.mjs 决定，prettier 改它会破坏 npm run data:check
+src/core/catalog.ts

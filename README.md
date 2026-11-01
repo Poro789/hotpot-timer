@@ -27,6 +27,7 @@ npm run dev        # 开发服务器
 
 ```bash
 npm run lint       # ESLint
+npm run format:check  # Prettier（改格式后跑 npm run format；生成物 src/core/catalog.ts 不参与）
 npm run typecheck  # tsc --noEmit（strict + noUncheckedIndexedAccess）
 npm test           # 单元测试（Vitest：时间/告警/状态/迁移/目录/熟度派生）
 npm run test:e2e   # Playwright：冒烟 / PWA 离线 / 无障碍 / 关键路径

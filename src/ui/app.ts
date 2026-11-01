@@ -167,7 +167,18 @@ export function boot(): void {
     overtime?: 'hard' | 'soft',
     midpoint?: number,
   ): void {
-    const food: NewFood = { name, timeSec, desc, custom, times, cues, risk, technique, overtime, midpoint };
+    const food: NewFood = {
+      name,
+      timeSec,
+      desc,
+      custom,
+      times,
+      cues,
+      risk,
+      technique,
+      overtime,
+      midpoint,
+    };
     store.addFoodTimer(food, ts);
     // 时长卡片上已经看得见，toast 只报菜名，保持一行
     toast.show(`已添加 ${name}`);

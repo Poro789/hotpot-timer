@@ -4,7 +4,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** 版本号与构建日期：从 package.json 读取，注入为 import.meta.env.APP_* */
-const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8')) as { version: string };
+const pkg = JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf8')) as {
+  version: string;
+};
 const APP_VERSION = pkg.version;
 const APP_BUILD_DATE = new Date().toISOString().slice(0, 10);
 

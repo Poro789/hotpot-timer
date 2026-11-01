@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint / Typecheck / 数据校验 / 单测
+    name: Lint / Format / Typecheck / 数据校验 / 单测
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +22,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run format:check
       - run: npm run typecheck
       - run: npm run data:check
       - run: npm test
