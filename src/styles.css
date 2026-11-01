@@ -6,25 +6,59 @@
 }
 
 :root {
+  /* ============ 色板：单一事实来源 ============
+   * 每个颜色只定义一次（*-rgb 三元组），命名色与透明色都由它派生；
+   * 改主色只改这里。index.html 的 theme-color 与 manifest 的 color 需同步改。
+   */
   /* 背景：炭火夜色，暖调递进 */
-  --bg-deep: #14100d;
-  --bg-panel: #1d1712;
-  --bg-card: #262019;
-  --bg-card-hover: #2f2820;
+  --bg-deep-rgb: 20, 16, 13; /* #14100d */
+  --bg-panel-rgb: 29, 23, 18; /* #1d1712 */
+  --bg-card-rgb: 38, 32, 25; /* #262019 */
+  --bg-card-hover-rgb: 47, 40, 32; /* #2f2820 */
   /* 主色：从红油、牛油、炭火中提炼 */
-  --chili-red: #e04a33; /* 红油辣汤 */
-  --chili-red-bright: #ff6a4d; /* 红油提亮（交互态） */
-  --flame-orange: #ff8c42; /* 炭火 */
-  --butter-amber: #f2a93b; /* 牛油金 */
-  --butter-amber-bright: #ffc46b; /* 出锅金（完成态） */
-  --copper: #c98a4b; /* 铜锅（次要操作） */
-  --copper-bright: #e0a869; /* 铜锅提亮（交互态） */
-  --text-primary: #f7f1e6; /* 暖白 */
-  --text-secondary: #b3a48f; /* 暖灰 */
-  --border-subtle: rgba(255, 236, 200, 0.08);
-  --glow-red: 0 0 18px rgba(224, 74, 51, 0.45);
-  --glow-amber: 0 0 18px rgba(242, 169, 59, 0.45);
+  --chili-red-rgb: 224, 74, 51; /* 红油辣汤 #e04a33 */
+  --chili-red-bright-rgb: 255, 106, 77; /* 红油提亮（交互态）#ff6a4d */
+  --flame-orange-rgb: 255, 140, 66; /* 炭火 #ff8c42 */
+  --butter-amber-rgb: 242, 169, 59; /* 牛油金 #f2a93b */
+  --butter-amber-bright-rgb: 255, 196, 107; /* 出锅金（完成态）#ffc46b */
+  --copper-rgb: 201, 138, 75; /* 铜锅（次要操作）#c98a4b */
+  --copper-bright-rgb: 224, 168, 105; /* 铜锅提亮（交互态）#e0a869 */
+  --text-primary-rgb: 247, 241, 230; /* 暖白 #f7f1e6 */
+  --text-secondary-rgb: 179, 164, 143; /* 暖灰 #b3a48f */
+  --warm-cream-rgb: 255, 236, 200; /* 发丝描边用的暖白 */
+  /* 语义专用色（不属于"炭火"主色板，只服务红绿灯熟度与遮罩） */
+  --doneness-rare-rgb: 106, 190, 110; /* 偏生（绿）：熟度药丸专用 */
+  --overlay-rgb: 10, 7, 5; /* 弹层遮罩：比 --bg-deep 更深一档 */
+  --bg-deep: rgb(var(--bg-deep-rgb));
+  --bg-panel: rgb(var(--bg-panel-rgb));
+  --bg-card: rgb(var(--bg-card-rgb));
+  --bg-card-hover: rgb(var(--bg-card-hover-rgb));
+  --chili-red: rgb(var(--chili-red-rgb));
+  --chili-red-bright: rgb(var(--chili-red-bright-rgb));
+  --flame-orange: rgb(var(--flame-orange-rgb));
+  --butter-amber: rgb(var(--butter-amber-rgb));
+  --butter-amber-bright: rgb(var(--butter-amber-bright-rgb));
+  --copper: rgb(var(--copper-rgb));
+  --copper-bright: rgb(var(--copper-bright-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  /* 实色块（红/金按钮、熟度药丸）上的文字 */
+  --on-solid: #fff;
+  --border-subtle: rgba(var(--warm-cream-rgb), 0.08);
+  --glow-red: 0 0 18px rgba(var(--chili-red-rgb), 0.45);
+  --glow-amber: 0 0 18px rgba(var(--butter-amber-rgb), 0.45);
   --border-radius: 14px;
+
+  /* ============ 字号阶梯：7 档，别再新增档位 ============
+   * 小屏（<=481px）只允许降到阶梯里的下一档，不要出现新数值。
+   */
+  --fs-xs: 12px; /* 辅助说明：手法行、说明行、页脚版本 */
+  --fs-sm: 13px; /* 次级文本：熟度判据、药丸、标签 */
+  --fs-base: 15px; /* 正文：按钮、输入、列表项 */
+  --fs-lg: 17px; /* 区块标题、弹窗标题 */
+  --fs-xl: 22px; /* 小屏倒计时数字 */
+  --fs-2xl: 26px; /* 倒计时数字 / 小屏主标题 */
+  --fs-3xl: 30px; /* 页面主标题 */
 }
 
 html {
@@ -37,8 +71,12 @@ body {
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
   background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(224, 74, 51, 0.16) 0%, transparent 60%),
-    radial-gradient(800px 500px at 90% 110%, rgba(255, 140, 66, 0.12) 0%, transparent 60%),
+    radial-gradient(1200px 600px at 50% -10%, rgba(var(--chili-red-rgb), 0.16) 0%, transparent 60%),
+    radial-gradient(
+      800px 500px at 90% 110%,
+      rgba(var(--flame-orange-rgb), 0.12) 0%,
+      transparent 60%
+    ),
     var(--bg-deep);
   color: var(--text-primary);
   min-height: 100vh;
@@ -77,18 +115,18 @@ body {
 }
 
 .header h1 {
-  font-size: 30px;
+  font-size: var(--fs-3xl);
   font-weight: 800;
   letter-spacing: 2px;
   background: linear-gradient(90deg, var(--flame-orange), var(--chili-red));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 12px rgba(224, 74, 51, 0.35));
+  filter: drop-shadow(0 0 12px rgba(var(--chili-red-rgb), 0.35));
 }
 
 .subtitle {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
   letter-spacing: 4px;
   margin-top: 6px;
@@ -110,7 +148,7 @@ body {
   border-radius: 16px;
   background: var(--bg-card);
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   min-height: 32px;
@@ -123,7 +161,7 @@ body {
 
 .setting-btn[aria-pressed='true'] {
   color: var(--text-primary);
-  border-color: rgba(242, 169, 59, 0.4);
+  border-color: rgba(var(--butter-amber-rgb), 0.4);
 }
 
 .setting-btn.off {
@@ -134,7 +172,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
 }
 
@@ -160,7 +198,7 @@ body {
 .timer-section h2,
 .quick-time-section h2,
 .food-section h2 {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 700;
   margin-bottom: 14px;
   color: var(--text-primary);
@@ -186,7 +224,7 @@ body {
   padding: 11px 14px;
   border: none;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -212,24 +250,24 @@ body {
 }
 
 .btn-secondary {
-  background: rgba(201, 138, 75, 0.18);
+  background: rgba(var(--copper-rgb), 0.18);
   color: var(--copper-bright);
-  border: 1px solid rgba(201, 138, 75, 0.5);
+  border: 1px solid rgba(var(--copper-rgb), 0.5);
 }
 
 .btn-secondary:not(:disabled):active {
-  background: rgba(201, 138, 75, 0.32);
-  box-shadow: 0 0 14px rgba(201, 138, 75, 0.4);
+  background: rgba(var(--copper-rgb), 0.32);
+  box-shadow: 0 0 14px rgba(var(--copper-rgb), 0.4);
 }
 
 .btn-danger {
-  background: rgba(224, 74, 51, 0.18);
+  background: rgba(var(--chili-red-rgb), 0.18);
   color: var(--chili-red-bright);
-  border: 1px solid rgba(224, 74, 51, 0.5);
+  border: 1px solid rgba(var(--chili-red-rgb), 0.5);
 }
 
 .btn-danger:not(:disabled):active {
-  background: rgba(224, 74, 51, 0.32);
+  background: rgba(var(--chili-red-rgb), 0.32);
   box-shadow: var(--glow-red);
 }
 
@@ -243,12 +281,27 @@ body {
 
 .empty-state {
   text-align: center;
-  padding: 36px 20px;
+  padding: 26px 20px 30px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: var(--fs-base);
   grid-column: 1 / -1;
-  border: 1.5px dashed rgba(255, 236, 200, 0.14);
+  border: 1.5px dashed rgba(var(--warm-cream-rgb), 0.14);
   border-radius: 12px;
+}
+
+/* 空态的锅：唯一允许出现在空态的装饰，带一点炭火辉光 */
+.empty-pot {
+  font-size: var(--fs-3xl);
+  line-height: 1;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 14px rgba(var(--flame-orange-rgb), 0.35));
+}
+
+.empty-hint {
+  margin-top: 6px;
+  font-size: var(--fs-xs);
+  letter-spacing: 1px;
+  opacity: 0.8;
 }
 
 /* ============ 计时器卡片 ============ */
@@ -272,10 +325,10 @@ body {
 
 /* 计时中：红油呼吸边框 */
 .timer-card.running {
-  border-color: rgba(224, 74, 51, 0.6);
+  border-color: rgba(var(--chili-red-rgb), 0.6);
   box-shadow:
     var(--glow-red),
-    inset 0 0 24px rgba(224, 74, 51, 0.06);
+    inset 0 0 24px rgba(var(--chili-red-rgb), 0.06);
   animation: breathe 2s ease-in-out infinite;
 }
 
@@ -283,13 +336,13 @@ body {
   0%,
   100% {
     box-shadow:
-      0 0 10px rgba(224, 74, 51, 0.3),
-      inset 0 0 24px rgba(224, 74, 51, 0.05);
+      0 0 10px rgba(var(--chili-red-rgb), 0.3),
+      inset 0 0 24px rgba(var(--chili-red-rgb), 0.05);
   }
   50% {
     box-shadow:
-      0 0 22px rgba(224, 74, 51, 0.6),
-      inset 0 0 24px rgba(224, 74, 51, 0.1);
+      0 0 22px rgba(var(--chili-red-rgb), 0.6),
+      inset 0 0 24px rgba(var(--chili-red-rgb), 0.1);
   }
 }
 
@@ -297,7 +350,8 @@ body {
 .timer-card.completed {
   border-color: var(--chili-red-bright);
   background:
-    linear-gradient(180deg, rgba(224, 74, 51, 0.12), rgba(224, 74, 51, 0.04)), var(--bg-card);
+    linear-gradient(180deg, rgba(var(--chili-red-rgb), 0.12), rgba(var(--chili-red-rgb), 0.04)),
+    var(--bg-card);
   animation: breatheOvertime 1.2s ease-in-out infinite;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
@@ -306,13 +360,13 @@ body {
   0%,
   100% {
     box-shadow:
-      0 0 8px rgba(224, 74, 51, 0.3),
-      inset 0 0 20px rgba(224, 74, 51, 0.05);
+      0 0 8px rgba(var(--chili-red-rgb), 0.3),
+      inset 0 0 20px rgba(var(--chili-red-rgb), 0.05);
   }
   50% {
     box-shadow:
-      0 0 24px rgba(224, 74, 51, 0.6),
-      inset 0 0 30px rgba(224, 74, 51, 0.12);
+      0 0 24px rgba(var(--chili-red-rgb), 0.6),
+      inset 0 0 30px rgba(var(--chili-red-rgb), 0.12);
   }
 }
 
@@ -323,7 +377,7 @@ body {
 }
 
 .timer-food-name {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 700;
   line-height: 1.3;
   word-break: break-all;
@@ -344,26 +398,26 @@ body {
 }
 
 .timer-time {
-  font-size: 26px;
+  font-size: var(--fs-2xl);
   font-weight: 800;
   color: var(--butter-amber);
   font-variant-numeric: tabular-nums;
   letter-spacing: 1px;
-  text-shadow: 0 0 14px rgba(242, 169, 59, 0.35);
+  text-shadow: 0 0 14px rgba(var(--butter-amber-rgb), 0.35);
 }
 
 .timer-card.running .timer-time {
   color: var(--chili-red-bright);
-  text-shadow: 0 0 16px rgba(224, 74, 51, 0.5);
+  text-shadow: 0 0 16px rgba(var(--chili-red-rgb), 0.5);
 }
 
 .timer-card.completed .timer-time {
   color: var(--chili-red-bright);
-  text-shadow: 0 0 16px rgba(224, 74, 51, 0.5);
+  text-shadow: 0 0 16px rgba(var(--chili-red-rgb), 0.5);
 }
 
 .timer-desc {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -380,7 +434,7 @@ body {
   padding: 7px 10px;
   border: none;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -400,30 +454,30 @@ body {
 }
 
 .btn-toggle {
-  background: rgba(201, 138, 75, 0.18);
+  background: rgba(var(--copper-rgb), 0.18);
   color: var(--copper-bright);
-  border: 1px solid rgba(201, 138, 75, 0.5);
+  border: 1px solid rgba(var(--copper-rgb), 0.5);
 }
 
 .btn-toggle:active {
-  background: rgba(201, 138, 75, 0.3);
-  box-shadow: 0 0 12px rgba(201, 138, 75, 0.4);
+  background: rgba(var(--copper-rgb), 0.3);
+  box-shadow: 0 0 12px rgba(var(--copper-rgb), 0.4);
 }
 
 .timer-card.completed .btn-toggle {
-  background: rgba(224, 74, 51, 0.16);
+  background: rgba(var(--chili-red-rgb), 0.16);
   color: var(--chili-red-bright);
-  border-color: rgba(224, 74, 51, 0.45);
+  border-color: rgba(var(--chili-red-rgb), 0.45);
 }
 
 .btn-delete {
-  background: rgba(224, 74, 51, 0.16);
+  background: rgba(var(--chili-red-rgb), 0.16);
   color: var(--chili-red-bright);
-  border: 1px solid rgba(224, 74, 51, 0.5);
+  border: 1px solid rgba(var(--chili-red-rgb), 0.5);
 }
 
 .btn-delete:active {
-  background: rgba(224, 74, 51, 0.26);
+  background: rgba(var(--chili-red-rgb), 0.26);
   box-shadow: var(--glow-red);
 }
 
@@ -437,14 +491,19 @@ body {
   margin: 0 auto;
   z-index: 940;
   background:
-    linear-gradient(180deg, rgba(242, 169, 59, 0.14), rgba(242, 169, 59, 0.05)), var(--bg-panel);
-  border: 1.5px solid rgba(242, 169, 59, 0.55);
+    linear-gradient(
+      180deg,
+      rgba(var(--butter-amber-rgb), 0.14),
+      rgba(var(--butter-amber-rgb), 0.05)
+    ),
+    var(--bg-panel);
+  border: 1.5px solid rgba(var(--butter-amber-rgb), 0.55);
   border-bottom: none;
   border-radius: 16px 16px 0 0;
   padding: 14px 16px 16px;
   box-shadow:
     0 -6px 30px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(242, 169, 59, 0.25);
+    0 0 18px rgba(var(--butter-amber-rgb), 0.25);
   animation: slideUp 0.25s ease-out;
 }
 
@@ -468,7 +527,7 @@ body {
 }
 
 .done-banner-head h3 {
-  font-size: 15px;
+  font-size: var(--fs-base);
   font-weight: 800;
   color: var(--butter-amber-bright);
 }
@@ -493,7 +552,7 @@ body {
 }
 
 .done-item-name {
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 700;
   word-break: break-all;
 }
@@ -502,7 +561,11 @@ body {
 .flash-overlay {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(242, 169, 59, 0.5), rgba(242, 169, 59, 0.15));
+  background: radial-gradient(
+    circle at center,
+    rgba(var(--butter-amber-rgb), 0.5),
+    rgba(var(--butter-amber-rgb), 0.15)
+  );
   opacity: 0;
   pointer-events: none;
   z-index: 900;
@@ -534,7 +597,7 @@ body {
   border: 1.5px solid var(--border-subtle);
   border-radius: 10px;
   background: var(--bg-card);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 700;
   color: var(--text-primary);
   cursor: pointer;
@@ -549,7 +612,7 @@ body {
   transform: scale(0.93);
   border-color: var(--flame-orange);
   color: var(--flame-orange);
-  box-shadow: 0 0 12px rgba(255, 140, 66, 0.35);
+  box-shadow: 0 0 12px rgba(var(--flame-orange-rgb), 0.35);
 }
 
 /* ============ 食材选择 ============ */
@@ -573,7 +636,7 @@ body {
   border: 1.5px solid var(--border-subtle);
   border-radius: 20px;
   background: var(--bg-card);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
@@ -590,9 +653,9 @@ body {
 
 .tab-btn.active {
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
+  color: var(--on-solid);
   border-color: transparent;
-  box-shadow: 0 0 14px rgba(224, 74, 51, 0.4);
+  box-shadow: 0 0 14px rgba(var(--chili-red-rgb), 0.4);
 }
 
 .food-grid {
@@ -622,9 +685,10 @@ body {
 }
 
 .food-card.selected {
-  border-color: rgba(224, 74, 51, 0.55);
+  border-color: rgba(var(--chili-red-rgb), 0.55);
   background:
-    linear-gradient(180deg, rgba(224, 74, 51, 0.1), rgba(224, 74, 51, 0.03)), var(--bg-card);
+    linear-gradient(180deg, rgba(var(--chili-red-rgb), 0.1), rgba(var(--chili-red-rgb), 0.03)),
+    var(--bg-card);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
@@ -638,17 +702,17 @@ body {
   padding: 0 6px;
   border-radius: 11px;
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
-  font-size: 12px;
+  color: var(--on-solid);
+  font-size: var(--fs-xs);
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 10px rgba(224, 74, 51, 0.5);
+  box-shadow: 0 0 10px rgba(var(--chili-red-rgb), 0.5);
 }
 
 .food-card .food-name {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   margin-bottom: 4px;
   line-height: 1.3;
@@ -658,7 +722,7 @@ body {
 }
 
 .food-card .food-time {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
 }
 
@@ -677,7 +741,7 @@ body {
 }
 
 .timer-status .status-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 800;
   padding: 2px 12px;
   border-radius: 10px;
@@ -697,21 +761,21 @@ body {
 
 /* 偏生（绿）：还没到最保守的熟度 */
 .timer-status[data-status='rare'] .status-label {
-  background: rgba(106, 190, 110, 0.85);
-  color: #14100d;
+  background: rgba(var(--doneness-rare-rgb), 0.85);
+  color: var(--bg-deep);
 }
 
 /* 适中（黄）：接近最佳口感 */
 .timer-status[data-status='medium'] .status-label {
-  background: rgba(242, 169, 59, 0.9);
-  color: #14100d;
+  background: rgba(var(--butter-amber-rgb), 0.9);
+  color: var(--bg-deep);
 }
 
 /* 偏熟（红）：到点即偏熟，超时继续偏熟 */
 .timer-status[data-status='wellDone'] .status-label {
-  background: rgba(224, 74, 51, 0.85);
-  color: #fff;
-  box-shadow: 0 0 10px rgba(224, 74, 51, 0.4);
+  background: rgba(var(--chili-red-rgb), 0.85);
+  color: var(--on-solid);
+  box-shadow: 0 0 10px rgba(var(--chili-red-rgb), 0.4);
 }
 
 /* 偏生档风险提示行 */
@@ -721,18 +785,20 @@ body {
 
 /* 手法提示行 */
 .timer-technique {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--copper-bright);
   line-height: 1.4;
   padding: 4px 8px;
-  background: rgba(201, 138, 75, 0.1);
+  background: rgba(var(--copper-rgb), 0.1);
   border-radius: 6px;
+  /* 窄卡片里换行时避免最后一行只剩一个字（旧浏览器忽略此行） */
+  text-wrap: balance;
 }
 
 /* 超时分级：hard=多煮即老（红色警告） */
 .timer-time.overtime-hard {
   color: var(--chili-red-bright);
-  text-shadow: 0 0 16px rgba(224, 74, 51, 0.6);
+  text-shadow: 0 0 16px rgba(var(--chili-red-rgb), 0.6);
   animation: overtimePulse 1s ease-in-out infinite;
 }
 
@@ -759,9 +825,9 @@ body {
   height: 22px;
   border: none;
   border-radius: 50%;
-  background: rgba(224, 74, 51, 0.16);
+  background: rgba(var(--chili-red-rgb), 0.16);
   color: var(--chili-red-bright);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -772,7 +838,7 @@ body {
 }
 
 .food-remove-btn:active {
-  background: rgba(224, 74, 51, 0.4);
+  background: rgba(var(--chili-red-rgb), 0.4);
   transform: scale(0.9);
 }
 
@@ -781,8 +847,8 @@ body {
   text-align: center;
   padding: 28px 16px;
   color: var(--text-secondary);
-  font-size: 13.5px;
-  border: 1.5px dashed rgba(255, 236, 200, 0.14);
+  font-size: var(--fs-sm);
+  border: 1.5px dashed rgba(var(--warm-cream-rgb), 0.14);
   border-radius: 12px;
 }
 
@@ -806,7 +872,7 @@ body {
   border-radius: 10px;
   background: var(--bg-deep);
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: var(--fs-base);
   outline: none;
   transition:
     border-color 0.2s ease,
@@ -819,7 +885,7 @@ body {
 
 .my-foods-panel input:focus {
   border-color: var(--flame-orange);
-  box-shadow: 0 0 12px rgba(255, 140, 66, 0.3);
+  box-shadow: 0 0 12px rgba(var(--flame-orange-rgb), 0.3);
 }
 
 .custom-time-chips {
@@ -835,7 +901,7 @@ body {
   border-radius: 18px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -850,9 +916,9 @@ body {
 
 .time-chip.active {
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
+  color: var(--on-solid);
   border-color: transparent;
-  box-shadow: 0 0 12px rgba(224, 74, 51, 0.4);
+  box-shadow: 0 0 12px rgba(var(--chili-red-rgb), 0.4);
 }
 
 .btn-add-food {
@@ -860,8 +926,8 @@ body {
   border: none;
   border-radius: 10px;
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
-  font-size: 15px;
+  color: var(--on-solid);
+  font-size: var(--fs-base);
   font-weight: 700;
   cursor: pointer;
   transition:
@@ -880,7 +946,7 @@ body {
 .quick-name-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 7, 5, 0.72);
+  background: rgba(var(--overlay-rgb), 0.72);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -912,7 +978,7 @@ body {
   padding: 22px 20px 20px;
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.6),
-    0 0 24px rgba(224, 74, 51, 0.15);
+    0 0 24px rgba(var(--chili-red-rgb), 0.15);
   transform: translateY(14px) scale(0.96);
   transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -922,7 +988,7 @@ body {
 }
 
 .quick-name-modal h3 {
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 800;
   text-align: center;
   margin-bottom: 6px;
@@ -933,7 +999,7 @@ body {
 }
 
 .quick-name-hint {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--text-secondary);
   text-align: center;
   margin-bottom: 16px;
@@ -951,7 +1017,7 @@ body {
   border-radius: 10px;
   background: var(--bg-deep);
   color: var(--text-primary);
-  font-size: 15px;
+  font-size: var(--fs-base);
   outline: none;
   transition:
     border-color 0.2s ease,
@@ -964,7 +1030,7 @@ body {
 
 .quick-name-modal input:focus {
   border-color: var(--flame-orange);
-  box-shadow: 0 0 12px rgba(255, 140, 66, 0.3);
+  box-shadow: 0 0 12px rgba(var(--flame-orange-rgb), 0.3);
 }
 
 .quick-name-actions {
@@ -975,8 +1041,8 @@ body {
 
 .btn-primary {
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(224, 74, 51, 0.35);
+  color: var(--on-solid);
+  box-shadow: 0 2px 10px rgba(var(--chili-red-rgb), 0.35);
 }
 
 .btn-primary:not(:disabled):active {
@@ -997,10 +1063,10 @@ body {
   justify-content: space-between;
   gap: 10px;
   background: var(--bg-card);
-  border: 1px solid rgba(255, 140, 66, 0.5);
+  border: 1px solid rgba(var(--flame-orange-rgb), 0.5);
   border-radius: 12px;
   padding: 10px 14px;
-  font-size: 13.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
 }
@@ -1024,7 +1090,7 @@ body {
   margin: 0 auto;
   z-index: 920;
   background: var(--bg-card);
-  border: 1px solid rgba(242, 169, 59, 0.5);
+  border: 1px solid rgba(var(--butter-amber-rgb), 0.5);
   border-radius: 12px;
   padding: 10px 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
@@ -1037,7 +1103,7 @@ body {
 .update-banner .btn-small {
   width: 100%;
   background: linear-gradient(90deg, var(--chili-red), var(--flame-orange));
-  color: #fff;
+  color: var(--on-solid);
   border: none;
 }
 
@@ -1047,12 +1113,12 @@ body {
   bottom: 34px;
   left: 50%;
   transform: translateX(-50%) translateY(120px);
-  background: rgba(38, 32, 25, 0.95);
-  border: 1px solid rgba(242, 169, 59, 0.4);
+  background: rgba(var(--bg-card-rgb), 0.95);
+  border: 1px solid rgba(var(--butter-amber-rgb), 0.4);
   color: var(--text-primary);
   padding: 12px 26px;
   border-radius: 28px;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   opacity: 0;
   transition:
@@ -1070,30 +1136,23 @@ body {
   opacity: 1;
 }
 
-/* ============ 页脚标语 ============ */
+/* ============ 页脚（只保留版本号，无标语）============ */
 .footer {
   text-align: center;
   padding: 18px 0 6px;
 }
 
-.footer p {
-  font-size: 12px;
-  letter-spacing: 3px;
-  color: var(--text-secondary);
-  opacity: 0.75;
-}
-
 .footer-version {
-  margin-top: 4px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   letter-spacing: 1px;
+  color: var(--text-secondary);
   opacity: 0.55;
 }
 
 /* ============ 响应式 ============ */
 @media (max-width: 360px) {
   .header h1 {
-    font-size: 25px;
+    font-size: var(--fs-2xl);
   }
 
   .quick-time-grid {
@@ -1114,7 +1173,7 @@ body {
   }
 
   .timer-time {
-    font-size: 22px;
+    font-size: var(--fs-xl);
   }
 }
 
