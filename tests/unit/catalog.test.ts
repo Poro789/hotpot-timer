@@ -49,4 +49,29 @@ describe('食材目录（数据完整性）', () => {
       }
     }
   });
+
+  it('手法提示（technique）全量非空', () => {
+    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
+      for (const food of foodDatabase[cat]) {
+        expect(food.technique?.trim(), `${food.name} 缺手法提示`).toBeTruthy();
+      }
+    }
+  });
+
+  it('超时类型只允许 hard / soft', () => {
+    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
+      for (const food of foodDatabase[cat]) {
+        expect(['hard', 'soft'], `${food.name} 超时类型缺失或非法`).toContain(food.overtime);
+      }
+    }
+  });
+
+  it('阶段提示比例 midpoint（可选）落在 0~1 之间', () => {
+    for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
+      for (const food of foodDatabase[cat]) {
+        if (food.midpoint === undefined) continue;
+        expect(food.midpoint > 0 && food.midpoint < 1, `${food.name} midpoint 越界`).toBe(true);
+      }
+    }
+  });
 });

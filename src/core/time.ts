@@ -74,6 +74,11 @@ export function tickTimers(timers: readonly Timer[], ts: TimeSource): number[] {
 
 /** 运行中/已到期条目的实时剩余（毫秒）；已到期返回负数（超时）；非运行中返回 stored remainingMs */
 export function liveRemainingMs(t: Timer, ts: TimeSource): number {
+  // 跨会话（重启/新标签页）的 done 条目没有单调锚点（settleOnLoad 清空），
+  // 此时按墙钟 endAt 续算超时；否则 +X秒 会冻结在"时间到"，硬超时红色脉冲也永不触发。
+  if (t.state === 'done' && t.endAtMono === null && t.endAt !== null) {
+    return t.endAt - ts.wall();
+  }
   if (t.endAtMono === null) return Math.max(0, t.remainingMs);
   if (t.state === 'running' || t.state === 'done') {
     return t.endAtMono - ts.mono();
@@ -116,4 +121,31 @@ export function reanchorRunning(timers: readonly Timer[], ts: TimeSource): void 
       t.endAtMono = ts.mono() + t.remainingMs;
     }
   }
+}
+
+/**
+ * 硬超时阈值：hard 类食材（多煮即老）超时超过该时长后，
+ * 卡片时间转红色脉冲提醒。阈值只在这里定义一次，渲染层两处共用。
+ */
+export const OVERTIME_HARD_MS = 10_000;
+
+/**
+ * 超时是否需要红色警告：只有 hard 类食材超时满阈值才算。
+ * soft（多煮更入味）与未标注食材（自定义/快速计时）永不报警。
+ */
+export function shouldPulseOvertime(
+  kind: 'hard' | 'soft' | undefined,
+  overtimeMs: number,
+): boolean {
+  return kind === 'hard' && overtimeMs >= OVERTIME_HARD_MS;
+}
+
+/**
+ * 阶段提示判定：运行中、食材标了 midpoint（0~1）、且按单调钟已过该比例。
+ * "每条目只提示一次"由调用方记录（见 app.ts 的 midpointFired）。
+ */
+export function isMidpointDue(t: Timer, nowMono: number): boolean {
+  if (t.state !== 'running' || !t.food.midpoint || t.endAtMono === null) return false;
+  const elapsed = nowMono - (t.endAtMono - t.food.totalMs);
+  return elapsed >= t.food.totalMs * t.food.midpoint;
 }

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatMs,
+  isMidpointDue,
   liveRemainingMs,
+  OVERTIME_HARD_MS,
   pauseTimer,
   reanchorRunning,
   settleOnLoad,
+  shouldPulseOvertime,
   startTimer,
   tickTimers,
   type TimeSource,
@@ -183,5 +186,67 @@ describe('settleOnLoad（刷新/重载结算）', () => {
     reanchorRunning([t], ts);
     ts.advance(5_000);
     expect(tickTimers([t], ts)).toEqual([t.id]);
+  });
+});
+
+describe('跨会话超时续算（liveRemainingMs）', () => {
+  it('done 条目无单调锚点时按墙钟续算超时（重启页面后 +X秒 继续涨）', () => {
+    const ts = new FakeClock();
+    const t = makeTimer({
+      state: 'done',
+      endAt: 2_000_000,
+      endAtMono: null, // settleOnLoad 会清空锚点
+      remainingMs: 0, // settleOnLoad 对 running->done 的补报条目置 0
+    });
+    ts.setWall(2_011_000); // 超时 11s
+    expect(liveRemainingMs(t, ts)).toBe(-11_000);
+    // 有锚点时仍按单调钟（会话内不受系统改时影响）
+    const anchored = makeTimer({ state: 'done', endAt: 2_000_000, endAtMono: 12_000 });
+    ts.setWall(99_000_000);
+    expect(liveRemainingMs(anchored, ts)).toBe(12_000 - ts.mono());
+  });
+});
+
+describe('超时分级判定（shouldPulseOvertime）', () => {
+  it('hard 类：超时满 10s 才判定为硬超时', () => {
+    expect(OVERTIME_HARD_MS).toBe(10_000);
+    expect(shouldPulseOvertime('hard', OVERTIME_HARD_MS - 1)).toBe(false);
+    expect(shouldPulseOvertime('hard', OVERTIME_HARD_MS)).toBe(true);
+    expect(shouldPulseOvertime('hard', 60_000)).toBe(true);
+  });
+
+  it('soft 类与未标注食材：永不判为硬超时', () => {
+    expect(shouldPulseOvertime('soft', 60_000)).toBe(false);
+    expect(shouldPulseOvertime(undefined, 60_000)).toBe(false);
+    expect(shouldPulseOvertime('hard', 0)).toBe(false);
+  });
+});
+
+describe('阶段提示判定（isMidpointDue）', () => {
+  const midpointTimer = (over: Partial<Timer> = {}): Timer =>
+    makeTimer({
+      state: 'running',
+      endAtMono: 200_000, // 目标结束时刻（单调钟）
+      food: { baseName: '鸭血', name: '鸭血', totalMs: 100_000, desc: '', midpoint: 0.5 },
+      ...over,
+    });
+
+  it('运行中且已过 midpoint 比例 -> true（含恰好等于）', () => {
+    // 起点 = endAtMono - totalMs = 100_000；阈值 = 100_000 * 0.5 = 50s
+    expect(isMidpointDue(midpointTimer(), 149_999)).toBe(false);
+    expect(isMidpointDue(midpointTimer(), 150_000)).toBe(true);
+    expect(isMidpointDue(midpointTimer(), 180_000)).toBe(true);
+  });
+
+  it('暂停 / 无 midpoint / 无单调锚点 -> false', () => {
+    expect(isMidpointDue(midpointTimer({ state: 'paused' }), 900_000)).toBe(false);
+    expect(isMidpointDue(midpointTimer({ state: 'done' }), 900_000)).toBe(false);
+    expect(isMidpointDue(midpointTimer({ endAtMono: null }), 900_000)).toBe(false);
+    expect(
+      isMidpointDue(
+        midpointTimer({ food: { baseName: '鸭血', name: '鸭血', totalMs: 100_000, desc: '' } }),
+        900_000,
+      ),
+    ).toBe(false);
   });
 });

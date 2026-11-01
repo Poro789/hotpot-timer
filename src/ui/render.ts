@@ -5,7 +5,7 @@ import {
   type DonenessStatus,
   type Timer,
 } from '../core/types';
-import { formatMs } from '../core/time';
+import { formatMs, shouldPulseOvertime } from '../core/time';
 import { CATEGORIES, foodDatabase, type Category } from '../core/catalog';
 import { escapeHtml } from './html';
 import type { Elements } from './elements';
@@ -121,7 +121,7 @@ export class Render {
     // 超时分级：hard=多煮即老（红色警告）/ soft=多煮更入味（中性）
     if (overtime > 0) {
       const t = this.store.getTimer(id);
-      if (t?.food.overtime === 'hard' && overtime >= 10_000) {
+      if (shouldPulseOvertime(t?.food.overtime, overtime)) {
         ref.time.classList.add('overtime-hard');
       } else {
         ref.time.classList.remove('overtime-hard');
@@ -165,7 +165,7 @@ export class Render {
       const overtime = -t.remainingMs; // remainingMs 为负 = 超时
       ref.time.textContent = overtime > 0 ? `+${formatMs(overtime)}` : '时间到';
       // 超时分级：hard=多煮即老（红色警告）
-      if (t.food.overtime === 'hard' && overtime >= 10_000) {
+      if (shouldPulseOvertime(t.food.overtime, overtime)) {
         ref.time.classList.add('overtime-hard');
       } else {
         ref.time.classList.remove('overtime-hard');

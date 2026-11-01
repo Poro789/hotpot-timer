@@ -1,6 +1,7 @@
 import { Store, type NewFood } from '../core/store';
 import {
   liveRemainingMs,
+  isMidpointDue,
   reanchorRunning,
   settleOnLoad,
   systemTime,
@@ -107,15 +108,12 @@ export function boot(): void {
   // ---------- 阶段提示（每条目只触发一次） ----------
   const midpointFired = new Set<number>();
   function checkMidpoints(): void {
+    const nowMono = ts.mono();
     for (const t of store.snapshot.timers) {
-      if (t.state !== 'running' || !t.food.midpoint || t.endAtMono === null) continue;
       if (midpointFired.has(t.id)) continue;
-      const elapsed = ts.mono() - (t.endAtMono - t.food.totalMs);
-      const threshold = t.food.totalMs * t.food.midpoint;
-      if (elapsed >= threshold) {
-        midpointFired.add(t.id);
-        toast.show(`🔍 ${t.food.name} 该检查一下了`);
-      }
+      if (!isMidpointDue(t, nowMono)) continue;
+      midpointFired.add(t.id);
+      toast.show(`🔍 ${t.food.name} 该检查一下了`);
     }
   }
 
