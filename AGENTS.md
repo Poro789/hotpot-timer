@@ -48,6 +48,11 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
   「时间到」，硬超时红色脉冲永不触发（曾经真发生过）。
 - 超时阈值 `OVERTIME_HARD_MS`（10s）只在 `src/core/time.ts` 定义一次；渲染层只调
   `shouldPulseOvertime()` / `isMidpointDue()`，别把阈值和判定条件抄回 UI 层。
+- **后台提醒靠一个常驻 Worker**（`src/platform/scheduler.ts`）：整页只建一次，重新武装靠 `arm`/`disarm` 消息
+  （`public/timer-worker.js` 收到 `arm` 会先清掉上一个 one-shot）。别改回「每次武装 new Worker + terminate」——
+  隐藏期间每次增删改都要重建，one-shot 触发后也销毁。构造失败/`onerror` 会回退主线程 `setTimeout`、
+  下次武装再试 Worker，这条回退别删（离线、Worker 被拦时它是唯一的提醒来源）。
+  测试见 `tests/unit/scheduler.test.ts`（不引 jsdom：桩 `document.hidden` / rAF / `window` / `Worker` 就够）。
 
 ## 测试
 
