@@ -6,6 +6,7 @@ import {
   confirmAlarm,
   confirmAllAlarms,
   enqueueDone,
+  pruneQueue,
 } from '../core/alarm';
 import type { AlarmState } from '../core/types';
 import { beep } from '../platform/audio';
@@ -30,14 +31,18 @@ interface Deps {
  * 告警控制器：完成队列 + 循环提醒（确认模型）。
  * - 多份同时到点：合并为一次告警（一次闪光 + 循环音），列表逐条确认；
  * - 循环音每 2s 一次，直到全部确认或 60s 封顶；
- * - silent 入队（离开期间到期）：不发声，只亮面板；用户首次交互后循环音自动接管。
+ * - silent 入队（离开期间到期）：不发声，只亮面板；用户首次交互后循环音自动接管；
+ * - 队列每次 commit 都与计时列表对账（见 reconcile），面板不会残留无效行。
  */
 export class AlarmController {
   private state: AlarmState = NO_ALARM;
   private lastPulseWall = 0;
   private loopId: number | null = null;
+  private unsubscribe: () => void = () => {};
 
-  constructor(private deps: Deps) {}
+  constructor(private deps: Deps) {
+    this.unsubscribe = deps.store.subscribe(() => this.reconcile());
+  }
 
   get queue(): readonly number[] {
     return this.state.queue;
@@ -80,15 +85,27 @@ export class AlarmController {
 
   confirm(id: number): void {
     this.state = confirmAlarm(this.state, id);
-    this.afterConfirm();
+    this.afterQueueChange();
   }
 
   confirmAll(): void {
     this.state = confirmAllAlarms();
-    this.afterConfirm();
+    this.afterQueueChange();
   }
 
-  private afterConfirm(): void {
+  /**
+   * 队列与计时列表对账（每次 commit）：条目已不在列表里（删除、全部删除、
+   * 或别的标签页删除后水合进来），或已不再是完成态（按「加一份」重新开始），
+   * 就从队列里撤掉。否则确认面板会留一行空名字，循环音也对着一行无效条目响。
+   */
+  private reconcile(): void {
+    const pruned = pruneQueue(this.state, (id) => this.deps.store.getTimer(id)?.state === 'done');
+    if (pruned === this.state) return;
+    this.state = pruned;
+    this.afterQueueChange();
+  }
+
+  private afterQueueChange(): void {
     if (!this.state.active) this.stopLoop();
     this.deps.onQueueChange(this.state.queue);
   }
@@ -120,5 +137,6 @@ export class AlarmController {
 
   dispose(): void {
     this.stopLoop();
+    this.unsubscribe();
   }
 }

@@ -41,6 +41,40 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
     await expect(page.locator('#done-banner')).toBeHidden();
   });
 
+  test('删除未确认的到点条目：确认面板不留空行', async ({ page }) => {
+    // 种子：done + missed=true -> 启动即静默补报，面板出现一行
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'hotpot-timer-state-v2',
+        JSON.stringify({
+          version: 3,
+          timers: [
+            {
+              id: 1,
+              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
+              remainingMs: 0,
+              state: 'done',
+              endAt: Date.now() - 5000,
+              missed: true,
+            },
+          ],
+          myFoods: [],
+          settings: { sound: false, vibrate: false, systemNotify: false },
+          nextTimerId: 2,
+          customFoodCounter: 1,
+        }),
+      );
+    });
+    await page.goto('/');
+    await expect(page.locator('#done-banner')).toBeVisible();
+    await expect(page.locator('.done-item')).toHaveCount(1);
+    // 未点「知道了」就把卡片删掉：面板必须跟着清掉该条目
+    // （旧行为：告警队列不跟计时列表对账 -> 面板残留一行空名字）
+    await page.locator('.timer-card[data-timer-id="1"] .btn-delete').click();
+    await expect(page.locator('.done-item')).toHaveCount(0);
+    await expect(page.locator('#done-banner')).toBeHidden();
+  });
+
   test('离开期间到点：启动即补报（🕒 前缀）', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem(

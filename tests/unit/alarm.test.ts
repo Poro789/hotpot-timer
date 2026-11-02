@@ -7,6 +7,7 @@ import {
   confirmAlarm,
   confirmAllAlarms,
   enqueueDone,
+  pruneQueue,
 } from '../../src/core/alarm';
 
 describe('告警队列（完成合并模型）', () => {
@@ -57,5 +58,36 @@ describe('告警队列（完成合并模型）', () => {
     expect(alarmExpired(s, 1000 + ALARM_MAX_MS)).toBe(true);
     // 未激活的告警永不"过期"
     expect(alarmExpired(NO_ALARM, 1e12)).toBe(false);
+  });
+});
+
+describe('pruneQueue（告警队列与计时列表对账）', () => {
+  const alive = (id: number): boolean => id !== 2;
+
+  it('条目被删除后从队列移除，其余保留', () => {
+    let s = enqueueDone(NO_ALARM, 1, 1000);
+    s = enqueueDone(s, 2, 1000);
+    s = pruneQueue(s, alive);
+    expect(s.queue).toEqual([1]);
+    expect(s.active).toBe(true);
+  });
+
+  it('队列清空后告警结束（循环提醒随之停止）', () => {
+    const s = pruneQueue(enqueueDone(NO_ALARM, 2, 1000), alive);
+    expect(s).toEqual(NO_ALARM);
+    expect(s.active).toBe(false);
+  });
+
+  it('无变化时返回同一对象（每次 commit 都调用也不会产生新状态）', () => {
+    const s = enqueueDone(NO_ALARM, 1, 1000);
+    expect(pruneQueue(s, alive)).toBe(s);
+    expect(pruneQueue(NO_ALARM, alive)).toBe(NO_ALARM);
+  });
+
+  it('封顶起算点不因对账而改变', () => {
+    let s = enqueueDone(NO_ALARM, 1, 1000);
+    s = enqueueDone(s, 2, 1000);
+    s = pruneQueue(s, alive);
+    expect(s.startedAtWall).toBe(1000);
   });
 });
