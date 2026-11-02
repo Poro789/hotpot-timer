@@ -1,5 +1,5 @@
 import { escapeHtml } from './html';
-import { formatMs } from '../core/time';
+import { formatDuration } from '../core/time';
 
 export interface DialogElements {
   overlay: HTMLDivElement;
@@ -71,7 +71,7 @@ export class QuickNameDialog {
     this.onConfirmCb = onConfirm;
     this.onCancelCb = onCancel;
     this.lastFocus = (document.activeElement as HTMLElement | null) ?? null;
-    this.el.hint.innerHTML = `时长 <span>${formatMs(seconds * 1000)}</span> · 留空将使用「${escapeHtml(defaultName)}」`;
+    this.el.hint.innerHTML = `时长 <span>${formatDuration(seconds * 1000)}</span> · 留空将使用「${escapeHtml(defaultName)}」`;
     this.el.input.value = defaultName;
     this.el.overlay.hidden = false;
     // 下一帧再加 open 类，保证过渡动画播放

@@ -29,7 +29,14 @@ export type TimerState = 'running' | 'paused' | 'done';
 export interface Timer {
   id: number;
   food: Food;
-  /** 暂停/完成时的权威剩余时间（毫秒）；运行中以 endAtMono 实时计算 */
+  /**
+   * 剩余/超时（毫秒），**符号约定**——同一个字段三种身份，读之前先看 state：
+   * - `paused`：权威剩余（正数）。它没有 endAt 可算，只有这里可信。
+   * - `running` / `done`：每帧由 `tickTimers` 按 `endAtMono` 重算的**派生显示值**，
+   *   正 = 还剩多少，**负 = 已超时多少**；跨会话（无 endAtMono）时按 `endAt` 墙钟续算。
+   * 显示请走 `liveRemainingMs()` + `formatRemaining()` / `formatOvertime()`；
+   * 别把它直接喂给格式化函数——负数会被当 0，超时读数就没了。
+   */
   remainingMs: number;
   state: TimerState;
   /** 运行中：目标结束时刻（墙钟，ms epoch），仅用于跨会话续算 */
@@ -111,6 +118,8 @@ export const STATE_VERSION = 3;
 export interface PersistedTimer {
   id: number;
   food: Food;
+  /** 只有 `paused` 条目携带权威剩余；`running`/`done` 写 0 占位（真相在 endAt，加载时按墙钟重算）。
+   *  旧存档里 running/done 可能是正数或负数的实际值——不读它。 */
   remainingMs: number;
   state: TimerState;
   endAt: number | null;

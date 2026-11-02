@@ -52,6 +52,14 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
   「时间到」，硬超时红色脉冲永不触发（曾经真发生过）。
 - 超时阈值 `OVERTIME_HARD_MS`（10s）只在 `src/core/time.ts` 定义一次；渲染层只调
   `shouldPulseOvertime()` / `isMidpointDue()`，别把阈值和判定条件抄回 UI 层。
+- **`remainingMs` 的符号约定**（写在 `core/types.ts` 上）：只有 `paused` 里它是权威剩余；
+  `running` / `done` 里它是每帧按 `endAtMono`（跨会话按 `endAt`）重算的**显示值，负数 = 已超时**。
+  显示只走 `liveRemainingMs()` + `formatRemaining()` / `formatOvertime()`（`formatDuration()` 是纯时长，
+  给食材卡与弹层用）。别把带符号的值直接喂格式化函数：以前一个 `formatMs` 同时管「剩余」和「超时」，
+  顶部 `Math.max(0, ms)` 把负数吞成「0秒」，调用点写反永远不会红。
+- **存档里 `running`/`done` 不存 `remainingMs`**（`toPersisted` 写 0 占位）：真相是 `endAt`，
+  `loadState` 靠 `settleOnLoad` 按墙钟重算剩余与超时。只有 `paused` 携带权威剩余（它没有 `endAt` 可算）。
+  测试见 `tests/unit/storage.test.ts`——它同时证明「占位 0 不会泄漏到运行时」。
 - **后台提醒靠一个常驻 Worker**（`src/platform/scheduler.ts`）：整页只建一次，重新武装靠 `arm`/`disarm` 消息
   （`public/timer-worker.js` 收到 `arm` 会先清掉上一个 one-shot）。别改回「每次武装 new Worker + terminate」——
   隐藏期间每次增删改都要重建，one-shot 触发后也销毁。构造失败/`onerror` 会回退主线程 `setTimeout`、

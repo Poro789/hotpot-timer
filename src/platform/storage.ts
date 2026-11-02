@@ -160,12 +160,11 @@ function toPersisted(t: Timer): PersistedTimer {
   return {
     id: t.id,
     food: t.food,
-    remainingMs:
-      t.state === 'running' && t.endAt !== null
-        ? Math.max(0, t.endAt - Date.now())
-        : t.state === 'done' && t.endAt !== null
-          ? t.endAt - Date.now() // 负数 = 超时
-          : t.remainingMs,
+    // remainingMs 的符号约定：只有 paused 条目带权威剩余（它没有 endAt 可算）。
+    // running / done 的真相是 endAt——loadState 里 settleOnLoad 按墙钟重算剩余与超时，
+    // 这里再存一份只会多一份可能过期的读数，所以置 0 占位。
+    // （旧存档里 running/done 可能是正数或负数的实际值；加载时一律按 endAt 重算，不读它。）
+    remainingMs: t.state === 'paused' ? t.remainingMs : 0,
     state: t.state,
     endAt: t.state === 'running' || t.state === 'done' ? t.endAt : null,
     missed: t.missed,
@@ -188,16 +187,15 @@ export function loadState(): AppState {
   if (!persisted) return defaultState();
 
   const timers = persisted.timers.map(fromPersisted);
-  const missed = settleOnLoad(timers, Date.now());
+  // 结算「离开期间到期」：settleOnLoad 就地改状态（done + missed）并按 endAt 重算 remainingMs。
+  // 返回的 missed id 不在这里用——app 侧从 timer.missed 读（见 app.ts 的补报）。
+  settleOnLoad(timers, Date.now());
   const state: AppState = {
     timers,
     myFoods: persisted.myFoods,
     settings: { ...DEFAULT_SETTINGS, ...persisted.settings },
     nextTimerId: persisted.nextTimerId,
   };
-  if (missed.length > 0) {
-    // 标记已在 settleOnLoad 内完成；此处仅为语义清晰
-  }
   return state;
 }
 

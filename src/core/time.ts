@@ -12,11 +12,14 @@ export const systemTime: TimeSource = {
 };
 
 /**
- * 计时显示（向上取整到 0.1 秒，到点前不出现 0秒）：
+ * 纯时长文本（向上取整到 0.1 秒，到点前不出现 0秒）：
  * - < 60s：显示一位小数，如 "14.3秒"
  * - >= 60s：整数分秒（分钟级精度足够，且避免宽度溢出），如 "1分30秒"、"10分"
+ *
+ * 入参必须是**非负时长**（食材卡时长、弹层提示这类）。带符号的 `remainingMs`
+ * 不要直接喂进来——剩余走 formatRemaining、超时走 formatOvertime。
  */
-export function formatMs(ms: number): string {
+export function formatDuration(ms: number): string {
   const total = Math.max(0, ms);
   if (total < 60_000) {
     const tenth = Math.ceil(total / 100); // 0.1s 位，向上取整
@@ -28,6 +31,16 @@ export function formatMs(ms: number): string {
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
   return sec === 0 ? `${min}分` : `${min}分${sec}秒`;
+}
+
+/** 剩余时间显示。负数 = 已到期，按 0 处理；超时读数必须走 formatOvertime */
+export function formatRemaining(ms: number): string {
+  return formatDuration(Math.max(0, ms));
+}
+
+/** 超时显示："+12.3秒"。入参是超时的毫秒数（正数；调用方自己从 remainingMs 取反） */
+export function formatOvertime(ms: number): string {
+  return `+${formatDuration(Math.max(0, ms))}`;
 }
 
 /** 开始/继续计时。返回是否发生了状态变化 */

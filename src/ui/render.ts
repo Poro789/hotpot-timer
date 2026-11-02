@@ -5,7 +5,7 @@ import {
   type DonenessStatus,
   type Timer,
 } from '../core/types';
-import { formatMs, shouldPulseOvertime } from '../core/time';
+import { formatDuration, formatOvertime, formatRemaining, shouldPulseOvertime } from '../core/time';
 import { CATEGORIES, foodDatabase, type Category } from '../core/catalog';
 import { escapeHtml } from './html';
 import type { Elements } from './elements';
@@ -82,7 +82,7 @@ export class Render {
         </div>
         <div class="timer-card-body">
             <div class="timer-info">
-                <div class="timer-time">${formatMs(t.remainingMs)}</div>
+                <div class="timer-time">${formatRemaining(t.remainingMs)}</div>
                 ${status}
             </div>
             <div class="timer-card-controls">
@@ -107,7 +107,8 @@ export class Render {
     if (!ref) return;
     // ms 为负 = 超时；刚到期（0 <= ms < 1s）显示"时间到"，避免"0秒 -> +0秒"多出一秒
     const overtime = ms < 0 ? -ms : 0;
-    ref.time.textContent = ms < 0 ? `+${formatMs(-ms)}` : ms < 1000 ? '时间到' : formatMs(ms);
+    ref.time.textContent =
+      ms < 0 ? formatOvertime(-ms) : ms < 1000 ? '时间到' : formatRemaining(ms);
     // 超时分级：hard=多煮即老（红色警告）/ soft=多煮更入味（中性）
     if (overtime > 0) {
       const t = this.store.getTimer(id);
@@ -153,7 +154,7 @@ export class Render {
     // 完成卡显示超时时间（+Xs）或"时间到"（刚到期）；运行中的卡由 rAF 每帧直写
     if (t.state === 'done') {
       const overtime = -t.remainingMs; // remainingMs 为负 = 超时
-      ref.time.textContent = overtime > 0 ? `+${formatMs(overtime)}` : '时间到';
+      ref.time.textContent = overtime > 0 ? formatOvertime(overtime) : '时间到';
       // 超时分级：hard=多煮即老（红色警告）
       if (shouldPulseOvertime(t.food.overtime, overtime)) {
         ref.time.classList.add('overtime-hard');
@@ -161,7 +162,7 @@ export class Render {
         ref.time.classList.remove('overtime-hard');
       }
     } else {
-      ref.time.textContent = formatMs(t.remainingMs);
+      ref.time.textContent = formatRemaining(t.remainingMs);
       ref.time.classList.remove('overtime-hard');
     }
     // 初始熟度状态
@@ -236,14 +237,14 @@ export class Render {
       // 卡片本身不再是可交互元素：里面只有一个「再加一份」按钮，
       // 删除按钮与它同级（按钮套按钮读屏念不清，aria-pressed 也会把「加一份」说成开关）
       const label =
-        `${food.name}，时长 ${formatMs(ms)}` +
+        `${food.name}，时长 ${formatDuration(ms)}` +
         (count > 1 ? `，已有 ${count} 份` : '') +
         '，再加一份';
       card.innerHTML = `
         ${count > 1 ? `<div class="food-count-badge" aria-hidden="true">${count}</div>` : ''}
         <button type="button" class="food-add-btn" aria-label="${escapeHtml(label)}">
           <span class="food-name">${escapeHtml(food.name)}</span>
-          <span class="food-time">时长: <span>${formatMs(ms)}</span></span>
+          <span class="food-time">时长: <span>${formatDuration(ms)}</span></span>
         </button>
         ${
           isMyFoods
