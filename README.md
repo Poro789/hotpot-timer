@@ -73,6 +73,15 @@ src/
 
 ## 更新记录
 
+- **v1.2.3**（2026-11-02）
+  - 修复：快速计时的默认名不再跳号——`自定义食材N` 改为从当前计时列表推导，删掉另存的计数器
+    （此前打开弹层就自增、取消也算用过；清空列表后编号还可能停在 7）
+  - 工程：后台到点提醒改用常驻 Worker，靠 `arm`/`disarm` 消息重新武装，不再每次增删改都重建 Worker；
+    Worker 不可用时仍回退主线程定时器
+  - 工程：`formatMs` 拆成 `formatDuration` / `formatRemaining` / `formatOvertime`（原来把超时的负数静默归零成「0秒」）；
+    存档里 `running` / `done` 不再存一份没人读、还可能与 `endAt` 对不上的 `remainingMs`
+  - 工程：`AlarmController`、`store.hydrate`、`watchExternalChanges` 补上单测（不引 jsdom），单测 83 → 114 条
+  - 性能：每帧刷新只查一次计时条目（此前每张卡片两次线性查找）
 - **v1.2.2**（2026-11-02）
   - 无障碍：食材卡改为「一个容器 + 一个真实按钮」——此前是 `div[role=button]` 里套 ✕ 按钮（读屏念不清），
     并用 `aria-pressed` 把「再加一份」说成开关；现在 `aria-label` 直接说明动作与当前份数
