@@ -5,7 +5,6 @@ import {
   reanchorRunning,
   settleOnLoad,
   systemTime,
-  tickTimers,
   type TimeSource,
 } from '../core/time';
 import { foodDatabase } from '../core/catalog';
@@ -57,12 +56,10 @@ export function boot(): void {
   let selectedCustomTime = 60;
 
   // ---------- 到期处理（前台帧 / 后台唤醒 共用） ----------
+  // 置位、置顶重建、落盘都发生在 store.applyTick 的 commit 里（见订阅），
+  // 这里只负责「到期之后要发生什么」：声音 / 闪光 / 播报。
   function handleDue(ids: readonly number[], opts: AlarmOptions): void {
     if (ids.length === 0) return;
-    store.markDone(ids);
-    // 到点流程显式重建：卡片转"时间到" + 到点条目置顶
-    // （tick 已直接置位 state，markDone 在此路径上通常不产生结构变更）
-    render.forceRebuildTimers();
     // 同食材合并提醒：按 baseName 分组，多份只报一次
     const groups = new Map<string, number[]>();
     for (const id of ids) {
@@ -83,13 +80,12 @@ export function boot(): void {
       }
       alarm.handleDue(groupIds, { ...opts, announce: false });
     }
-    void saveState(store.snapshot);
   }
 
   // ---------- 调度 ----------
   const scheduler = new Scheduler(store, {
     onFrame: () => {
-      const due = tickTimers(store.snapshot.timers, ts);
+      const due = store.applyTick(ts);
       for (const t of store.snapshot.timers) {
         if (t.state === 'running' || t.state === 'done') {
           render.updateTime(t.id, liveRemainingMs(t, ts));
@@ -99,7 +95,7 @@ export function boot(): void {
       handleDue(due, { sound: true, flash: true, announce: true });
     },
     onWake: () => {
-      const due = tickTimers(store.snapshot.timers, ts);
+      const due = store.applyTick(ts);
       handleDue(due, { sound: true, flash: true, announce: true });
       scheduler.onStateChange(); // 若还有运行中条目，重新武装
     },

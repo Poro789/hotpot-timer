@@ -13,6 +13,20 @@ class FakeClock implements TimeSource {
 }
 const ts = new FakeClock();
 
+/** 可推进的时钟：applyTick 的测试需要时间真的往前走 */
+class TickingClock implements TimeSource {
+  private t = 0;
+  wall(): number {
+    return 1_000_000 + this.t;
+  }
+  mono(): number {
+    return this.t;
+  }
+  advance(ms: number): void {
+    this.t += ms;
+  }
+}
+
 function timerWith(baseName: string, name: string, over: Partial<Timer> = {}): Timer {
   return {
     id: 100,
@@ -74,10 +88,12 @@ describe('addQuickTimer（快速计时）', () => {
   });
 
   it('同名同时长：已完成 -> 重置并重新开计时', () => {
+    const clock = new TickingClock();
     const store = new Store(defaultState());
-    store.addQuickTimer('鲜鸭血', 60, ts);
-    store.markDone([store.snapshot.timers[0]!.id]);
-    store.addQuickTimer('鲜鸭血', 60, ts);
+    store.addQuickTimer('鲜鸭血', 60, clock);
+    clock.advance(60_000);
+    store.applyTick(clock);
+    store.addQuickTimer('鲜鸭血', 60, clock);
     const t = store.snapshot.timers[0]!;
     expect(t.state).toBe('running');
     expect(t.remainingMs).toBe(60_000);
@@ -102,7 +118,7 @@ describe('addQuickTimer（快速计时）', () => {
   });
 });
 
-describe('toggleTimer / markDone', () => {
+describe('toggleTimer / applyTick', () => {
   it('运行中 -> 暂停', () => {
     const store = new Store(defaultState());
     store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
@@ -111,14 +127,80 @@ describe('toggleTimer / markDone', () => {
     expect(store.getTimer(id)?.state).toBe('paused');
   });
   it('已完成 -> 加一份（重置并开计时）', () => {
+    const clock = new TickingClock();
     const store = new Store(defaultState());
-    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
     const id = store.snapshot.timers[0]!.id;
-    store.markDone([id]);
-    store.toggleTimer(id, ts);
+    clock.advance(15_000);
+    store.applyTick(clock);
+    store.toggleTimer(id, clock);
     const t = store.getTimer(id)!;
     expect(t.state).toBe('running');
     expect(t.remainingMs).toBe(15_000);
+  });
+});
+
+describe('applyTick（到点经统一 commit 通道：状态变更只有一个入口）', () => {
+  it('到点：返回 due、置 done、递增 structureVersion 并通知订阅者', () => {
+    const clock = new TickingClock();
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
+    const id = store.snapshot.timers[0]!.id;
+    const v0 = store.structureVersion;
+    let notified = 0;
+    store.subscribe(() => {
+      notified += 1;
+    });
+    clock.advance(15_000);
+    const due = store.applyTick(clock);
+    expect(due).toEqual([id]);
+    expect(store.getTimer(id)?.state).toBe('done');
+    // 旧路径：tickTimers 在 UI 层就地置位，markDone 视为无变更 -> 不通知、不存盘，
+    // 只能靠 app.ts 手动 forceRebuildTimers + saveState 补。这里要求走 commit。
+    expect(store.structureVersion).toBe(v0 + 1);
+    expect(notified).toBe(1);
+  });
+
+  it('未到点：返回空且不通知（每帧调用不会每帧存盘）', () => {
+    const clock = new TickingClock();
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
+    let notified = 0;
+    store.subscribe(() => {
+      notified += 1;
+    });
+    clock.advance(5_000);
+    expect(store.applyTick(clock)).toEqual([]);
+    expect(store.getTimer(1)?.remainingMs).toBe(10_000);
+    expect(notified).toBe(0);
+  });
+
+  it('done 条目继续按单调钟算超时（remainingMs 为负），且不再通知', () => {
+    const clock = new TickingClock();
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
+    clock.advance(15_000);
+    store.applyTick(clock);
+    let notified = 0;
+    store.subscribe(() => {
+      notified += 1;
+    });
+    clock.advance(4_000);
+    expect(store.applyTick(clock)).toEqual([]);
+    expect(store.getTimer(1)?.remainingMs).toBe(-4_000);
+    expect(notified).toBe(0);
+  });
+
+  it('幂等：同一条目不会第二次进入 due 列表，也不重复递增', () => {
+    const clock = new TickingClock();
+    const store = new Store(defaultState());
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
+    clock.advance(15_000);
+    expect(store.applyTick(clock)).toEqual([1]);
+    const v0 = store.structureVersion;
+    clock.advance(1_000);
+    expect(store.applyTick(clock)).toEqual([]);
+    expect(store.structureVersion).toBe(v0);
   });
 });
 
@@ -151,20 +233,24 @@ describe('structureVersion（渲染重建触发器）', () => {
     store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
     expect(store.structureVersion).toBe(v0 + 1);
   });
-  it('markDone 递增（到点条目置顶依赖重建）', () => {
+  it('applyTick 到点递增（到点条目置顶依赖重建）', () => {
+    const clock = new TickingClock();
     const store = new Store(defaultState());
-    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
     const v0 = store.structureVersion;
-    store.markDone([store.snapshot.timers[0]!.id]);
+    clock.advance(15_000);
+    store.applyTick(clock);
     expect(store.structureVersion).toBe(v0 + 1);
   });
-  it('markDone 幂等：重复调用不再递增', () => {
+  it('applyTick 幂等：已 done 后再推进不再递增', () => {
+    const clock = new TickingClock();
     const store = new Store(defaultState());
-    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    const id = store.snapshot.timers[0]!.id;
-    store.markDone([id]);
+    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, clock);
+    clock.advance(15_000);
+    store.applyTick(clock);
     const v0 = store.structureVersion;
-    store.markDone([id]);
+    clock.advance(15_000);
+    store.applyTick(clock);
     expect(store.structureVersion).toBe(v0);
   });
 });

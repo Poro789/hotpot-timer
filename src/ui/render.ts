@@ -21,8 +21,8 @@ export type CategoryTab = Category | 'myfoods';
 
 /**
  * 渲染层：
- * - 计时器卡片在 structureVersion 变化时重建（增/删/重置/水合）；
- * - 到点流程显式调用 forceRebuildTimers（到点条目置顶 + 状态样式）；
+ * - 计时器卡片只在 structureVersion 变化时重建（增/删/到点置顶/重置/水合）；
+ *   没有「绕过结构版本重建」的旁路——任何需要重绘的状态变化都必须走 Store 的 commit；
  * - 时间文本与熟度状态由调度循环通过 updateTime 直写（每帧，不重建 DOM）。
  */
 export class Render {
@@ -40,16 +40,6 @@ export class Render {
     const v = this.store.structureVersion;
     if (v === this.structuralSeen) return;
     this.structuralSeen = v;
-    this.rebuildTimers();
-  }
-
-  /**
-   * 无条件重建计时区域。
-   * 到点流程专用：tickTimers/markDone 在前台路径上通常不产生结构版本变化
-   * （状态由 tick 直接置位），到点置顶需要显式重建一次。
-   */
-  forceRebuildTimers(): void {
-    this.structuralSeen = this.store.structureVersion;
     this.rebuildTimers();
   }
 

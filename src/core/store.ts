@@ -7,7 +7,7 @@ import {
   type Settings,
   type Timer,
 } from './types';
-import { pauseTimer, startTimer, type TimeSource } from './time';
+import { pauseTimer, startTimer, tickTimers, type TimeSource } from './time';
 
 type Listener = () => void;
 
@@ -84,8 +84,9 @@ export function displayOrder(timers: readonly Timer[]): Timer[] {
 
 /**
  * 应用状态仓库：单向数据流。
- * - 所有变更通过意图方法进入，统一 commit 通知订阅者；
- * - structureVersion 仅在"卡片结构"变化（增/删/重置/水合）时递增，
+ * - 所有变更通过意图方法进入，统一 commit 通知订阅者（每帧推进时钟也走 applyTick，
+ *   渲染层不得直接改 snapshot 里的对象——否则到点时没人被通知，只能到处手动补）；
+ * - structureVersion 仅在"卡片结构"变化（增/删/到点置顶/重置/水合）时递增，
  *   渲染层据此决定是否重建 DOM；时间文本由调度循环单独刷新，不触发重建。
  */
 export class Store {
@@ -216,23 +217,17 @@ export class Store {
   }
 
   /**
-   * 调度器判定到期：置为完成。
-   * 完成会改变展示顺序（到点条目置顶），因此触发结构重建；
-   * 列表通常只有个位数条目，重建开销可忽略。
+   * 调度循环推进时钟（前台 rAF / 后台唤醒共用）。
+   * 「到点」是状态变更，所以由 Store 来做并统一 commit：结构版本递增（到点条目置顶
+   * 依赖重建），订阅者据此存盘 / 重新武装调度器 / 更新亮屏锁。
+   * 未到点的每帧只更新 remainingMs（纯显示值，不落盘），因此不通知订阅者。
+   * 返回刚好到期的 id 列表：调用方据此触发声音、闪光、播报。
    * 保留 endAt/endAtMono：到点后继续算超时时间。
    */
-  markDone(ids: readonly number[]): void {
-    let changed = false;
-    for (const id of ids) {
-      const t = this.getTimer(id);
-      if (!t || t.state === 'done') continue;
-      t.remainingMs = 0;
-      t.state = 'done';
-      t.missed = false;
-      // 不清 endAt/endAtMono：用于算超时
-      changed = true;
-    }
-    if (changed) this.commit(true);
+  applyTick(ts: TimeSource): number[] {
+    const due = tickTimers(this.state.timers, ts);
+    if (due.length > 0) this.commit(true);
+    return due;
   }
 
   // ---------- 我的食材 ----------
