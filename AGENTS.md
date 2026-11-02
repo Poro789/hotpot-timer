@@ -53,7 +53,10 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 
 - `tests/unit`（vitest）：必须用 `FakeClock`，禁止靠真实时间流逝或 `sleep` 通过。
 - `tests/e2e`（Playwright）：用 `page.addInitScript()` 写 localStorage `hotpot-timer-state-v2`（`version: 3`）
-  播种状态，别用 UI 点几十下。种子数据必须完全内联（`addInitScript` 会被序列化到浏览器执行）。
+  播种状态，别用 UI 点几十下。种子数据必须完全内联（`addInitScript` 会被序列化到浏览器执行）——
+  但**只用 `tests/e2e/seed.ts` 的 `seedState()`**：它内部那个回调只引用参数与浏览器全局，所以既满足内联约束，
+  又只有「一份状态形状」。别再往 spec 里复制一份，也别在 spec 里手算 `Date.now()`：
+  `endAt` 是**相对页面启动的毫秒偏移**（`-11_000` = 已超时 11 秒，`null` = 重启后已完成条目的形态）。
 - 新行为先写**会红**的测试再实现；红-green 验证时临时改坏的源码要**全部**还原——
   `false &&` 这类改动会被 eslint `no-constant-condition` 抓到，正好用来查漏还原。
 - `playwright.config.ts` 里 `retries: 1` 会掩盖 flake：一条测试偶发红，按真失败处理，别当噪声。

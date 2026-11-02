@@ -1,37 +1,26 @@
 import { expect, test } from '@playwright/test';
+import { seedState } from './seed';
 
 test.describe('交互体验与显示修复', () => {
   test('到点条目置顶：后添加的先完成，完成后自动排到最前', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'hotpot-timer-state-v2',
-        JSON.stringify({
-          version: 3,
-          timers: [
-            {
-              id: 1,
-              food: { baseName: '虾', name: '虾', totalMs: 15000, desc: '' },
-              remainingMs: 10000,
-              state: 'running',
-              endAt: Date.now() + 10000,
-              missed: false,
-            },
-            {
-              id: 2,
-              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '' },
-              remainingMs: 2000,
-              state: 'running',
-              endAt: Date.now() + 2000,
-              missed: false,
-            },
-          ],
-          myFoods: [],
-          settings: { sound: false, vibrate: false, systemNotify: false },
-          nextTimerId: 3,
-          customFoodCounter: 1,
-        }),
-      );
-    });
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '虾', name: '虾', totalMs: 15000, desc: '' },
+        remainingMs: 10000,
+        state: 'running',
+        endAt: 10_000,
+        missed: false,
+      },
+      {
+        id: 2,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '' },
+        remainingMs: 2000,
+        state: 'running',
+        endAt: 2000,
+        missed: false,
+      },
+    ]);
     await page.goto('/');
     // 初始顺序：虾(1) 在前
     await expect(page.locator('.timer-card').first()).toHaveAttribute('data-timer-id', '1');
@@ -78,29 +67,17 @@ test.describe('交互体验与显示修复', () => {
   });
 
   test('添加提示单行显示；完成卡"加一份"按钮单行', async ({ page }) => {
-    // 预置一个已完成计时（按钮显示"加一份"）
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'hotpot-timer-state-v2',
-        JSON.stringify({
-          version: 3,
-          timers: [
-            {
-              id: 1,
-              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '' },
-              remainingMs: 0,
-              state: 'done',
-              endAt: null,
-              missed: false,
-            },
-          ],
-          myFoods: [],
-          settings: { sound: false, vibrate: false, systemNotify: false },
-          nextTimerId: 2,
-          customFoodCounter: 1,
-        }),
-      );
-    });
+    // 预置一个已完成计时（按钮显示"加一份"）；endAt: null 是重启后条目的形态
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '' },
+        remainingMs: 0,
+        state: 'done',
+        endAt: null,
+        missed: false,
+      },
+    ]);
     await page.goto('/');
     // "加一份"按钮：文字单行（高度不超 min-height 36 + 边框余量）
     const addBtn = page.locator('.timer-card .btn-toggle');

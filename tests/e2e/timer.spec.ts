@@ -1,33 +1,23 @@
 import { expect, test, type Page } from '@playwright/test';
+import { seedState } from './seed';
 
 /**
- * 注意：addInitScript 回调会被序列化到浏览器执行，
- * 不能引用测试文件里的任何函数/常量，种子数据必须完全内联。
+ * 注意：addInitScript 回调会被序列化到浏览器执行，不能引用测试文件里的任何函数/常量。
+ * 种子状态统一走 tests/e2e/seed.ts（它内部那个回调只引用参数与浏览器全局），
+ * 别在这里再复制一份状态形状。
  */
 test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
   test('计时完成 -> 时间到面板 -> 确认后消失', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'hotpot-timer-state-v2',
-        JSON.stringify({
-          version: 3,
-          timers: [
-            {
-              id: 1,
-              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
-              remainingMs: 3000,
-              state: 'running',
-              endAt: Date.now() + 3000,
-              missed: false,
-            },
-          ],
-          myFoods: [],
-          settings: { sound: false, vibrate: false, systemNotify: false },
-          nextTimerId: 2,
-          customFoodCounter: 1,
-        }),
-      );
-    });
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
+        remainingMs: 3000,
+        state: 'running',
+        endAt: 3000,
+        missed: false,
+      },
+    ]);
     await page.goto('/');
     await expect(page.locator('.timer-card[data-timer-id="1"]')).toBeVisible();
     // 约 3 秒后到期：卡片转 completed，出现时间到面板
@@ -43,28 +33,16 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
 
   test('删除未确认的到点条目：确认面板不留空行', async ({ page }) => {
     // 种子：done + missed=true -> 启动即静默补报，面板出现一行
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'hotpot-timer-state-v2',
-        JSON.stringify({
-          version: 3,
-          timers: [
-            {
-              id: 1,
-              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
-              remainingMs: 0,
-              state: 'done',
-              endAt: Date.now() - 5000,
-              missed: true,
-            },
-          ],
-          myFoods: [],
-          settings: { sound: false, vibrate: false, systemNotify: false },
-          nextTimerId: 2,
-          customFoodCounter: 1,
-        }),
-      );
-    });
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
+        remainingMs: 0,
+        state: 'done',
+        endAt: -5000,
+        missed: true,
+      },
+    ]);
     await page.goto('/');
     await expect(page.locator('#done-banner')).toBeVisible();
     await expect(page.locator('.done-item')).toHaveCount(1);
@@ -76,28 +54,17 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
   });
 
   test('离开期间到点：启动即补报（🕒 前缀）', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'hotpot-timer-state-v2',
-        JSON.stringify({
-          version: 3,
-          timers: [
-            {
-              id: 1,
-              food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
-              remainingMs: 10000,
-              state: 'running',
-              endAt: Date.now() - 5000,
-              missed: false,
-            },
-          ],
-          myFoods: [],
-          settings: { sound: false, vibrate: false, systemNotify: false },
-          nextTimerId: 2,
-          customFoodCounter: 1,
-        }),
-      );
-    });
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 15000, desc: '七上八下，口感脆' },
+        remainingMs: 10000,
+        state: 'running',
+        // 页面启动前 5 秒就该到点：加载即补报
+        endAt: -5000,
+        missed: false,
+      },
+    ]);
     await page.goto('/');
     await expect(page.locator('#done-banner')).toBeVisible();
     await expect(page.locator('#done-banner')).toContainText('离开时已到点');
