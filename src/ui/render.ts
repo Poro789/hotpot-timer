@@ -101,17 +101,20 @@ export class Render {
     return card;
   }
 
-  /** 每帧写时间文本 + 熟度状态 + 超时分级（O(1)，无 DOM 查询）；运行中 + 已到期卡片 */
+  /**
+   * 每帧写时间文本 + 熟度状态 + 超时分级；运行中 + 已到期卡片。
+   * refs 查表 O(1)、无 DOM 查询；条目本身是一次线性查找，每帧只做一次（列表只有几项）。
+   */
   updateTime(id: number, ms: number): void {
     const ref = this.refs.get(id);
     if (!ref) return;
+    const t = this.store.getTimer(id);
     // ms 为负 = 超时；刚到期（0 <= ms < 1s）显示"时间到"，避免"0秒 -> +0秒"多出一秒
     const overtime = ms < 0 ? -ms : 0;
     ref.time.textContent =
       ms < 0 ? formatOvertime(-ms) : ms < 1000 ? '时间到' : formatRemaining(ms);
     // 超时分级：hard=多煮即老（红色警告）/ soft=多煮更入味（中性）
     if (overtime > 0) {
-      const t = this.store.getTimer(id);
       if (shouldPulseOvertime(t?.food.overtime, overtime)) {
         ref.time.classList.add('overtime-hard');
       } else {
@@ -120,8 +123,7 @@ export class Render {
     } else {
       ref.time.classList.remove('overtime-hard');
     }
-    const t = this.store.getTimer(id);
-    if (t && t.food.times) {
+    if (t?.food.times) {
       const elapsed = t.food.totalMs - ms; // 超时后 elapsed > totalMs
       const st = deriveDonenessStatus(elapsed, t.food.times);
       this.applyStatus(ref, st, t);
