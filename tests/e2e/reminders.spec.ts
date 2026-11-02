@@ -174,8 +174,9 @@ test.describe('到点提醒增强（手法 / 超时分级 / 阶段提示 / 合�
     await page.goto('/');
     // 两条同时到点：播报按 baseName 合并为 "毛肚 ×2 时间到！"
     await expect(page.locator('#live-region')).toHaveText('毛肚 ×2 时间到！', { timeout: 8_000 });
-    // 确认面板仍逐条列出（可分别确认）
+    // 确认面板合并成一条读数（播报按 baseName 合并，面板按数量合并）
     await expect(page.locator('#done-banner')).toBeVisible();
-    await expect(page.locator('.done-item')).toHaveCount(2);
+    await expect(page.locator('#done-banner')).toContainText('2 项时间到');
+    await expect(page.locator('.done-item')).toHaveCount(0);
   });
 });

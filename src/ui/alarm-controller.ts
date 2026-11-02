@@ -3,7 +3,6 @@ import {
   ALARM_LOOP_MS,
   NO_ALARM,
   alarmExpired,
-  confirmAlarm,
   confirmAllAlarms,
   enqueueDone,
   pruneQueue,
@@ -81,11 +80,6 @@ export class AlarmController {
     if (!settings.sound) return;
     this.pulse();
     this.startLoop();
-  }
-
-  confirm(id: number): void {
-    this.state = confirmAlarm(this.state, id);
-    this.afterQueueChange();
   }
 
   confirmAll(): void {

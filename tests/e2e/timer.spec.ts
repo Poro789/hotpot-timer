@@ -25,7 +25,9 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
       timeout: 10_000,
     });
     await expect(page.locator('#done-banner')).toBeVisible();
-    await expect(page.locator('#done-banner')).toContainText('时间到');
+    // 面板只报数量，不再逐行重复卡片上已有的名字
+    await expect(page.locator('#done-banner')).toContainText('1 项时间到');
+    await expect(page.locator('.done-item')).toHaveCount(0);
     // 一键确认
     await page.locator('#done-confirm-all').click();
     await expect(page.locator('#done-banner')).toBeHidden();
@@ -45,11 +47,10 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
     ]);
     await page.goto('/');
     await expect(page.locator('#done-banner')).toBeVisible();
-    await expect(page.locator('.done-item')).toHaveCount(1);
-    // 未点「知道了」就把卡片删掉：面板必须跟着清掉该条目
+    await expect(page.locator('#done-banner')).toContainText('1 项在你离开时到点');
+    // 未确认就把卡片删掉：面板必须跟着清空
     // （旧行为：告警队列不跟计时列表对账 -> 面板残留一行空名字）
     await page.locator('.timer-card[data-timer-id="1"] .btn-delete').click();
-    await expect(page.locator('.done-item')).toHaveCount(0);
     await expect(page.locator('#done-banner')).toBeHidden();
   });
 
@@ -67,9 +68,9 @@ test.describe('关键路径：完成流程 / 持久化 / 多标签', () => {
     ]);
     await page.goto('/');
     await expect(page.locator('#done-banner')).toBeVisible();
-    await expect(page.locator('#done-banner')).toContainText('离开时已到点');
-    await expect(page.locator('.done-item-name')).toContainText('🕒');
-    await page.locator('.done-item-btn').click();
+    await expect(page.locator('#done-banner')).toContainText('🕒');
+    await expect(page.locator('#done-banner')).toContainText('1 项在你离开时到点');
+    await page.locator('#done-confirm-all').click();
     await expect(page.locator('#done-banner')).toBeHidden();
   });
 

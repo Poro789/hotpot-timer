@@ -46,11 +46,7 @@ export function boot(): void {
     announce: (msg) => announce(el.liveRegion, msg),
     onQueueChange: () => renderDoneBanner(),
   });
-  const doneBanner = new DoneBanner(
-    el.doneBanner,
-    (id) => alarm.confirm(id),
-    () => alarm.confirmAll(),
-  );
+  const doneBanner = new DoneBanner(el.doneBanner, () => alarm.confirmAll());
 
   let currentCategory: CategoryTab = 'meat';
   let selectedCustomTime = 60;
@@ -114,15 +110,10 @@ export function boot(): void {
 
   // ---------- 渲染 ----------
   function renderDoneBanner(): void {
-    const items = alarm.queue.map((id) => {
-      const t = store.getTimer(id);
-      return {
-        id,
-        name: t ? timerDisplayName(store.snapshot.timers, t) : '',
-        missed: t?.missed ?? false,
-      };
-    });
-    doneBanner.render(items);
+    // 面板只报数量：名字与超时读数在卡片上（到点条目由 Store 置顶），不重复一遍
+    let missed = 0;
+    for (const id of alarm.queue) if (store.getTimer(id)?.missed) missed++;
+    doneBanner.render({ total: alarm.queue.length, missed });
   }
 
   function refreshViews(structural: boolean): void {

@@ -4,7 +4,6 @@ import {
   ALARM_MAX_MS,
   NO_ALARM,
   alarmExpired,
-  confirmAlarm,
   confirmAllAlarms,
   enqueueDone,
   pruneQueue,
@@ -32,17 +31,6 @@ describe('告警队列（完成合并模型）', () => {
     let s = enqueueDone(NO_ALARM, 1, 1000);
     s = enqueueDone(s, 1, 2000);
     expect(s.queue).toEqual([1]);
-  });
-
-  it('逐条确认；队列清空后告警结束', () => {
-    let s = enqueueDone(NO_ALARM, 1, 1000);
-    s = enqueueDone(s, 2, 1000);
-    s = confirmAlarm(s, 1);
-    expect(s.active).toBe(true);
-    expect(s.queue).toEqual([2]);
-    s = confirmAlarm(s, 2);
-    expect(s.active).toBe(false);
-    expect(s.queue).toEqual([]);
   });
 
   it('一键全部确认', () => {

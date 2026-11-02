@@ -129,7 +129,10 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 
 - `overtime` 分级与阶段提示的取值口径写在「食材数据」一节（166 项全部标注：136 `hard` / 30 `soft`，
   114 项有 `midpoint`）。要改标前先想清楚视觉反馈：只有 `hard` 在超时满 10s 后红色脉冲。
-- 到点确认面板（`.done-banner`，固定底部）与计时卡片信息重复：功能上是逐条「知道了」，暂不重构。
+- 到点确认面板（`.done-banner`，固定底部）**只报数量、只有一个「全部知道了」**：名字与超时读数只在卡片上
+  （到点条目由 Store 置顶，就在面板上方）。别加回逐行列表——那是把卡片信息重复一遍，且曾经出现
+  「卡片已删、面板留一行空名字」；`core/alarm.ts` 的 `confirmAlarm()`（逐条确认）随之删掉了，
+  要加回逐条确认先回答「循环提醒该停哪一条」。补报口径：`missed >= total` 时只说「N 项在你离开时到点」。
 - `prefers-reduced-motion` 下，hard 超时的红色脉冲只剩**静态红字 + 发光**（不闪）。有意取舍：光敏优先，
   但报警不能整个降没——`tests/e2e/reminders.spec.ts` 里那条断言就是守这个（animation 关掉、红色仍在）。
   别再往降级块里加「连颜色一起砍」的规则。

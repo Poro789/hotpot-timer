@@ -15,13 +15,6 @@ export function enqueueDone(s: AlarmState, id: number, wallNow: number): AlarmSt
   return { active: true, queue, startedAtWall: wallNow };
 }
 
-/** 确认某条目；队列清空后告警结束 */
-export function confirmAlarm(s: AlarmState, id: number): AlarmState {
-  const queue = s.queue.filter((x) => x !== id);
-  if (queue.length === 0) return NO_ALARM;
-  return { ...s, queue };
-}
-
 export function confirmAllAlarms(): AlarmState {
   return NO_ALARM;
 }
