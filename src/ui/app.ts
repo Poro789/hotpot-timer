@@ -1,4 +1,4 @@
-import { Store, type NewFood } from '../core/store';
+import { Store, timerDisplayName, type NewFood } from '../core/store';
 import {
   liveRemainingMs,
   isMidpointDue,
@@ -71,9 +71,8 @@ export function boot(): void {
       groups.set(key, arr);
     }
     for (const [baseName, groupIds] of groups) {
-      const t = store.getTimer(groupIds[0]!);
-      const name = t?.food.name ?? baseName;
-      const label = groupIds.length > 1 ? `${name} ×${groupIds.length}` : name;
+      // 播报按 baseName + 到点份数：显示名（卡片标题）已经带 xN，别把份数报两遍
+      const label = groupIds.length > 1 ? `${baseName} ×${groupIds.length}` : baseName;
       // 单份：正常播报；多份：合并播报（"毛肚 ×2 时间到！"）
       if (opts.announce) {
         announce(el.liveRegion, `${label} 时间到！`);
@@ -109,7 +108,7 @@ export function boot(): void {
       if (midpointFired.has(t.id)) continue;
       if (!isMidpointDue(t, nowMono)) continue;
       midpointFired.add(t.id);
-      toast.show(`🔍 ${t.food.name} 该检查一下了`);
+      toast.show(`🔍 ${timerDisplayName(store.snapshot.timers, t)} 该检查一下了`);
     }
   }
 
@@ -117,7 +116,11 @@ export function boot(): void {
   function renderDoneBanner(): void {
     const items = alarm.queue.map((id) => {
       const t = store.getTimer(id);
-      return { id, name: t?.food.name ?? '', missed: t?.missed ?? false };
+      return {
+        id,
+        name: t ? timerDisplayName(store.snapshot.timers, t) : '',
+        missed: t?.missed ?? false,
+      };
     });
     doneBanner.render(items);
   }
@@ -251,7 +254,7 @@ export function boot(): void {
     if (del?.dataset.id) {
       const t = store.getTimer(parseInt(del.dataset.id, 10));
       store.removeTimer(parseInt(del.dataset.id, 10));
-      toast.show(t ? `已删除 ${t.food.name}` : '已删除');
+      toast.show(t ? `已删除 ${t.food.baseName}` : '已删除');
     }
   });
 
@@ -295,10 +298,14 @@ export function boot(): void {
 
   // ---------- 订阅：持久化 + 视图 + 调度 + 亮屏 ----------
   let lastStructural = -1;
+  // 从别的标签页水合进来的状态不再写回存储：写回会让对方再次收到 storage 事件、
+  // 再水合、再重绘（实测每次远程改动来回 3 次写盘 + 每个标签页 2 次全量重建，
+  // 靠「内容相同就不触发 storage 事件」才收敛）。只有发起方负责落盘。
+  let applyingRemote = false;
   store.subscribe(() => {
     const structural = store.structureVersion !== lastStructural;
     lastStructural = store.structureVersion;
-    void saveState(store.snapshot);
+    if (!applyingRemote) void saveState(store.snapshot);
     scheduler.onStateChange();
     void setWakeLock(store.snapshot.timers.some((t) => t.state === 'running'));
     refreshViews(structural);
@@ -306,9 +313,14 @@ export function boot(): void {
 
   // 其他标签页写入 -> 本标签页水合（last write wins）
   watchExternalChanges((state) => {
-    settleOnLoad(state.timers, Date.now());
-    reanchorRunning(state.timers, ts);
-    store.hydrate(state);
+    applyingRemote = true;
+    try {
+      settleOnLoad(state.timers, Date.now());
+      reanchorRunning(state.timers, ts);
+      store.hydrate(state);
+    } finally {
+      applyingRemote = false;
+    }
   });
 
   // ---------- 生命周期 ----------
