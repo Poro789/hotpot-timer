@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadState, saveState } from '../../src/platform/storage';
+import { loadState, saveState, watchExternalChanges } from '../../src/platform/storage';
 import { defaultState } from '../../src/core/store';
 import type { AppState, Timer } from '../../src/core/types';
 
@@ -120,5 +120,82 @@ describe('saveState / loadState（remainingMs 的符号约定）', () => {
     expect(loaded.timers[0]?.missed).toBe(true);
     expect(loaded.timers[0]?.endAt).not.toBeNull();
     expect(loaded.timers[0]!.remainingMs).toBeLessThanOrEqual(0);
+  });
+});
+
+describe('watchExternalChanges（别的标签页写盘后同步本标签页）', () => {
+  class FakeWindow {
+    private listeners = new Map<string, Set<(e: unknown) => void>>();
+    addEventListener(type: string, fn: (e: unknown) => void): void {
+      if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+      (this.listeners.get(type) as Set<(e: unknown) => void>).add(fn);
+    }
+    removeEventListener(type: string, fn: (e: unknown) => void): void {
+      this.listeners.get(type)?.delete(fn);
+    }
+    dispatch(type: string, e: unknown): void {
+      for (const fn of this.listeners.get(type) ?? []) fn(e);
+    }
+  }
+
+  function setupWatcher() {
+    const win = new FakeWindow();
+    vi.stubGlobal('window', win);
+    const onChange = vi.fn();
+    const off = watchExternalChanges(onChange);
+    return { win, onChange, off };
+  }
+
+  it('合法 v3 存档：水合成运行时状态（endAtMono 置空，等待重新锚定）', () => {
+    const { win, onChange } = setupWatcher();
+    win.dispatch('storage', {
+      key: KEY,
+      newValue: JSON.stringify({
+        version: 3,
+        timers: [
+          {
+            id: 7,
+            food: { baseName: '虾滑', name: '虾滑', totalMs: 180_000, desc: '' },
+            remainingMs: 180_000,
+            state: 'running',
+            endAt: Date.now() + 180_000,
+            missed: false,
+          },
+        ],
+        myFoods: [],
+        settings: { sound: true, volume: 0.3, installDismissed: false },
+        nextTimerId: 8,
+      }),
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const state = onChange.mock.calls[0]?.[0] as AppState;
+    expect(state.timers.map((t) => t.id)).toEqual([7]);
+    expect(state.timers[0]?.endAtMono).toBeNull();
+    expect(state.nextTimerId).toBe(8);
+  });
+
+  it('忽略：别的 key、清空（newValue=null）、坏 JSON、未来版本', () => {
+    const { win, onChange } = setupWatcher();
+    win.dispatch('storage', { key: 'someone-else', newValue: '{}' });
+    win.dispatch('storage', { key: KEY, newValue: null });
+    win.dispatch('storage', { key: KEY, newValue: '{坏 JSON' });
+    win.dispatch('storage', { key: KEY, newValue: JSON.stringify({ version: 99, timers: [] }) });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('退订后不再收事件', () => {
+    const { win, onChange, off } = setupWatcher();
+    off();
+    win.dispatch('storage', {
+      key: KEY,
+      newValue: JSON.stringify({
+        version: 3,
+        timers: [],
+        myFoods: [],
+        settings: {},
+        nextTimerId: 1,
+      }),
+    });
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

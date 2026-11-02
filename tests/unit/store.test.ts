@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Store, defaultState, displayOrder, timerDisplayName } from '../../src/core/store';
 import type { TimeSource } from '../../src/core/time';
-import type { Timer } from '../../src/core/types';
+import type { AppState, Timer } from '../../src/core/types';
 
 class FakeClock implements TimeSource {
   wall(): number {
@@ -333,6 +333,79 @@ describe('快速计时默认名（只有一个命名机制：从计时列表推�
     const store = new Store(defaultState());
     store.addQuickTimer('自定义食材1', 30, ts);
     expect('customFoodCounter' in store.snapshot).toBe(false);
+  });
+});
+
+describe('hydrate（外部水合：别的标签页写盘后同步本标签页）', () => {
+  const remote: AppState = {
+    ...defaultState(),
+    timers: [
+      {
+        id: 5,
+        food: { baseName: '虾滑', name: '虾滑', totalMs: 180_000, desc: '' },
+        remainingMs: 180_000,
+        state: 'running',
+        endAt: 2_000_000,
+        endAtMono: null,
+        missed: false,
+      },
+    ],
+    nextTimerId: 6,
+  };
+
+  it('整体替换快照：订阅者收到一次通知、结构版本递增', () => {
+    const store = new Store(defaultState());
+    store.addQuickTimer('本地条目', 30, ts);
+    let notified = 0;
+    store.subscribe(() => {
+      notified += 1;
+    });
+    const before = store.structureVersion;
+
+    store.hydrate(structuredClone(remote));
+
+    expect(notified).toBe(1);
+    expect(store.structureVersion).toBeGreaterThan(before);
+    expect(store.snapshot.timers.map((t) => t.id)).toEqual([5]);
+    expect(store.getTimer(5)?.food.name).toBe('虾滑');
+    expect(store.getTimer(1)).toBeUndefined(); // 本地条目被远端状态整体覆盖
+    expect(store.snapshot.nextTimerId).toBe(6);
+  });
+
+  it('水合后的列表参与份数与默认名推导（没有残留的本地状态）', () => {
+    const store = new Store(defaultState());
+    store.hydrate({
+      ...defaultState(),
+      timers: [
+        {
+          id: 1,
+          food: { baseName: '🥩 毛肚', name: '🥩 毛肚', totalMs: 15_000, desc: '' },
+          remainingMs: 15_000,
+          state: 'paused',
+          endAt: null,
+          endAtMono: null,
+          missed: false,
+        },
+        {
+          id: 2,
+          food: {
+            baseName: '自定义食材2',
+            name: '自定义食材2',
+            totalMs: 60_000,
+            desc: '',
+            custom: true,
+          },
+          remainingMs: 60_000,
+          state: 'paused',
+          endAt: null,
+          endAtMono: null,
+          missed: false,
+        },
+      ],
+      nextTimerId: 3,
+    });
+    expect(timerDisplayName(store.snapshot.timers, store.snapshot.timers[0]!)).toBe('🥩 毛肚');
+    expect(store.nextQuickDefaultName()).toBe('自定义食材3');
   });
 });
 

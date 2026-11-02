@@ -69,6 +69,11 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 ## 测试
 
 - `tests/unit`（vitest）：必须用 `FakeClock`，禁止靠真实时间流逝或 `sleep` 通过。
+- **`ui/` 层不是「不能单测」，只是别拿 DOM 硬凑**：vitest 的 `environment` 保持 `'node'`（不引 jsdom）。
+  不碰 DOM 的部分照常单测——`tests/unit/alarm-controller.test.ts` 靠 `vi.mock('../../src/platform/audio')`、
+  `vi.stubGlobal('window', globalThis)`（控制器只用 `window.setInterval`）和 `vi.useFakeTimers`
+  覆盖合并播报、2s 循环节拍、60s 封顶、每次 commit 的队列对账。碰 DOM 的（`render.ts` / `app.ts`）仍走 e2e。
+  跨标签页那条链在 `tests/unit/storage.test.ts`（桩 `window` 收 `storage` 事件）与 `store.test.ts` 的 `hydrate`。
 - `tests/e2e`（Playwright）：用 `page.addInitScript()` 写 localStorage `hotpot-timer-state-v2`（`version: 3`）
   播种状态，别用 UI 点几十下。种子数据必须完全内联（`addInitScript` 会被序列化到浏览器执行）——
   但**只用 `tests/e2e/seed.ts` 的 `seedState()`**：它内部那个回调只引用参数与浏览器全局，所以既满足内联约束，
