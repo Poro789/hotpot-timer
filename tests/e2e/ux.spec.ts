@@ -154,4 +154,13 @@ test.describe('交互体验与显示修复', () => {
       expect(box!.height).toBeLessThan(60);
     }
   });
+
+  test('限制说明常驻在提醒设置下方（不只写在 README 里）', async ({ page }) => {
+    await page.goto('/');
+    const note = page.locator('.settings-note');
+    await expect(note).toBeVisible();
+    await expect(note).toContainText('系统可能暂停本页');
+    // 必须是次级色：这是一条说明，不是又一处主强调
+    await expect(note).toHaveCSS('color', 'rgb(179, 164, 143)');
+  });
 });

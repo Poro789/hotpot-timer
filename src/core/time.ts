@@ -162,3 +162,19 @@ export function isMidpointDue(t: Timer, nowMono: number): boolean {
   const elapsed = nowMono - (t.endAtMono - t.food.totalMs);
   return elapsed >= t.food.totalMs * t.food.midpoint;
 }
+
+/**
+ * 判定「页面被系统挂起」的最小两钟差值（ms）。
+ * 挂起（移动端锁屏、后台冻结）期间 performance.now() 停在原地、Date.now() 照走，
+ * 这个差就是被系统吞掉的时长；单纯切后台时两钟都走，所以不会误报。
+ */
+export const SUSPEND_GAP_MS = 10_000;
+
+/**
+ * 本次两钟差值是否构成挂起：是则返回被吞掉的毫秒数，否则 0。
+ * 绝不返回负数（单调钟超前属于不该发生的情况，宁可当作没发生）。
+ */
+export function suspendedFor(wallDelta: number, monoDelta: number): number {
+  const gap = wallDelta - monoDelta;
+  return gap >= SUSPEND_GAP_MS ? gap : 0;
+}

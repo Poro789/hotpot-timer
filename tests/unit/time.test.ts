@@ -11,6 +11,8 @@ import {
   settleOnLoad,
   shouldPulseOvertime,
   startTimer,
+  suspendedFor,
+  SUSPEND_GAP_MS,
   tickTimers,
   type TimeSource,
 } from '../../src/core/time';
@@ -266,5 +268,26 @@ describe('阶段提示判定（isMidpointDue）', () => {
         900_000,
       ),
     ).toBe(false);
+  });
+});
+
+describe('suspendedFor（页面被系统挂起的判据）', () => {
+  it('墙钟走了 30s 而单调钟几乎没走 -> 判定挂起约 30s', () => {
+    // 挂起期间 performance.now() 不推进、Date.now() 照走，这就是它的签名
+    expect(suspendedFor(30_000, 16)).toBe(29_984);
+  });
+
+  it('两钟同步走 -> 0（前台正常推进）', () => {
+    expect(suspendedFor(16, 16)).toBe(0);
+    expect(suspendedFor(60_000, 59_990)).toBe(0);
+  });
+
+  it('差值不足阈值 -> 0（帧间抖动不算挂起）', () => {
+    expect(suspendedFor(SUSPEND_GAP_MS - 1, 0)).toBe(0);
+    expect(suspendedFor(SUSPEND_GAP_MS, 0)).toBe(SUSPEND_GAP_MS);
+  });
+
+  it('单调钟反而超前（不该发生）-> 不给负数', () => {
+    expect(suspendedFor(100, 5_000)).toBe(0);
   });
 });

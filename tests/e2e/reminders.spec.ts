@@ -179,4 +179,43 @@ test.describe('到点提醒增强（手法 / 超时分级 / 阶段提示 / 合�
     await expect(page.locator('#done-banner')).toContainText('2 项时间到');
     await expect(page.locator('.done-item')).toHaveCount(0);
   });
+
+  test('页面被系统冻结：回前台后说明刚才停了多久', async ({ page }) => {
+    await seedState(page, [
+      {
+        id: 1,
+        food: { baseName: '毛肚', name: '毛肚', totalMs: 60_000, desc: '七上八下，口感脆' },
+        remainingMs: 60_000,
+        state: 'running',
+        endAt: 60_000,
+        missed: false,
+      },
+    ]);
+    // 挂起的签名：JS 整个不跑，所以 Date.now() 前进了而 performance.now() 几乎没动。
+    // 这里照这个签名造场景：停掉 rAF（置 hidden + 派发事件），只把墙钟拨前 60 秒，再回前台。
+    await page.addInitScript(() => {
+      let offset = 0;
+      const realNow = Date.now.bind(Date);
+      Date.now = () => realNow() + offset;
+      (window as unknown as { __advanceWall: (ms: number) => void }).__advanceWall = (
+        ms: number,
+      ) => {
+        offset += ms;
+      };
+    });
+    await page.goto('/');
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.evaluate(() => {
+      (window as unknown as { __advanceWall: (ms: number) => void }).__advanceWall(60_000);
+    });
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    // 挂起期间响不了铃是平台硬上限，能做的只有把这段沉默说出来
+    await expect(page.locator('#toast')).toContainText('页面被系统停了', { timeout: 5_000 });
+  });
 });

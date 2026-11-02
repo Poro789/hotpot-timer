@@ -1,9 +1,11 @@
 import { Store, timerDisplayName, type NewFood } from '../core/store';
 import {
+  formatDuration,
   liveRemainingMs,
   isMidpointDue,
   reanchorRunning,
   settleOnLoad,
+  suspendedFor,
   systemTime,
   type TimeSource,
 } from '../core/time';
@@ -77,9 +79,33 @@ export function boot(): void {
     }
   }
 
+  // ---------- 挂起检测（把平台硬上限说出来） ----------
+  // 页面被系统挂起期间任何 JS 都不执行，那一程永远响不了铃。能做的只有两件：
+  // 回前台按墙钟补齐时长（settleOnLoad / liveRemainingMs 已经做了），
+  // 以及告诉用户刚才那段沉默是系统造成的——否则他只看到「+15分钟」，
+  // 分不清是自己忘了还是 App 没响。
+  let lastWall = ts.wall();
+  let lastMono = ts.mono();
+  let suspendNotified = false;
+  function checkSuspended(): void {
+    const wall = ts.wall();
+    const mono = ts.mono();
+    const gap = suspendedFor(wall - lastWall, mono - lastMono);
+    lastWall = wall;
+    lastMono = mono;
+    if (gap === 0) {
+      suspendNotified = false;
+      return;
+    }
+    if (suspendNotified) return; // 一次挂起只说一句
+    suspendNotified = true;
+    toast.show(`⏳ 页面被系统停了 ${formatDuration(gap)}，期间的到点已按真实时间补上`);
+  }
+
   // ---------- 调度 ----------
   const scheduler = new Scheduler(store, {
     onFrame: () => {
+      checkSuspended();
       const due = store.applyTick(ts);
       for (const t of store.snapshot.timers) {
         if (t.state === 'running' || t.state === 'done') {

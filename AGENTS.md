@@ -136,4 +136,8 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - `prefers-reduced-motion` 下，hard 超时的红色脉冲只剩**静态红字 + 发光**（不闪）。有意取舍：光敏优先，
   但报警不能整个降没——`tests/e2e/reminders.spec.ts` 里那条断言就是守这个（animation 关掉、红色仍在）。
   别再往降级块里加「连颜色一起砍」的规则。
-- 页面被系统挂起时无法响铃，回到前台补报——纯前端的物理上限，见 README「平台限制」。
+- 页面被系统挂起时无法响铃——纯前端的物理上限（见 README「平台限制」）。已经做的三层：运行中申请 Wake Lock；
+  隐藏但没被冻结时靠常驻 Worker 的 one-shot；回前台第一帧用两钟差（`core/time.ts` 的 `suspendedFor` /
+  `SUSPEND_GAP_MS` = 10s）识别「刚才被停了多久」并 toast 直说。界面上 `.settings-note` 那行是常驻说明，
+  `tests/e2e/ux.spec.ts` 断言它存在且是次级色——改文案可以，删掉或改成主强调色不行。
+  别为了「保证能响」引入 Push 服务/后端，那是另一套架构。
