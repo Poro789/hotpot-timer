@@ -66,11 +66,21 @@ describe('食材目录（数据完整性）', () => {
     }
   });
 
-  it('阶段提示比例 midpoint（可选）落在 0~1 之间', () => {
+  it('阶段提示 midpoint：适中档 ≥120s 必须有、<120s 必须没有、取值 ≥0.5', () => {
     for (const cat of Object.keys(foodDatabase) as Array<keyof typeof foodDatabase>) {
       for (const food of foodDatabase[cat]) {
-        if (food.midpoint === undefined) continue;
-        expect(food.midpoint > 0 && food.midpoint < 1, `${food.name} midpoint 越界`).toBe(true);
+        if (food.time >= 120) {
+          expect(food.midpoint, `${food.name}（适中 ${food.time}s）缺阶段提示`).toBeDefined();
+        } else {
+          expect(food.midpoint, `${food.name}（适中 ${food.time}s）不该有阶段提示`).toBeUndefined();
+        }
+        if (food.midpoint !== undefined) {
+          // 过半之前的提示没有行动价值
+          expect(
+            food.midpoint >= 0.5 && food.midpoint < 1,
+            `${food.name} midpoint 应在 0.5~1`,
+          ).toBe(true);
+        }
       }
     }
   });

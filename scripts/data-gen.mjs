@@ -13,9 +13,14 @@
  *   RiskNote：偏生档的安全提示（空 = 偏生无额外风险）
  *   ServingTip：通用熟度提示（旧列，保留）
  *   Technique：手法提示（卡片上的「手法」行）
- *   Overtime：超时分级，hard / soft / 空。只有 hard 会在超时满 10s 后红色脉冲
- *     （见 src/core/time.ts 的 shouldPulseOvertime）；soft 与空都不报警。
- *   Midpoint：阶段提示比例，(0,1) 开区间小数；elapsed 到 total*midpoint 时提示检查一次。
+ *   Overtime：超时分级，**必填** hard / soft。hard 会在超时满 10s 后红色脉冲
+ *     （见 src/core/time.ts 的 shouldPulseOvertime）；soft 不报警（多煮更入味/更软糯）。
+ *     判 hard 的三条依据：① 短时涮烫（TimeMedium ≤ 90s，多煮即老）；② RiskNote 要求
+ *     「务必全熟/煮透/断生」（安全类必须报警）；③ wellDone 档判据本身就是口感劣化
+ *     （发硬 / 变硬 / 发柴 / 发紧 / 橡皮 / 缩小 / 夹断 / 肉离骨）。
+ *   Midpoint：阶段提示比例，(0,1) 开区间小数；elapsed 到 total*midpoint 时提示「该检查一下了」。
+ *     取值规则：TimeMedium ≥ 120s 必填，≤240s 用 0.6、更久煨用 0.5；TimeMedium < 120s 必须留空
+ *     （两分钟以内的食材，提示完还得等半锅，没有意义）。
  *
  * 校验规则：
  *   - 表头必须恰好为上述 13 列
@@ -23,9 +28,10 @@
  *   - Category 属于：肉类/海鲜类/蔬菜类/豆制品类/丸滑类/经典火锅菜
  *   - 三档时长均为正整数（秒），且严格递增：Rare < Medium < WellDone
  *   - 三档判据均非空（红绿灯必须给出可目视确认的判据）
- *   - Overtime ∈ {hard, soft, 空}；Midpoint ∈ (0,1) 开区间小数或空
- *   - Overtime=soft 必须同时给 Midpoint：soft 超时不报警，再缺阶段提示就完全没有任何反馈
- *     （hard 带 Midpoint 是允许的阶段提示，两者语义独立）
+ *   - Overtime 必填，取值 {hard, soft}（留空等于这条食材没有任何超时反馈）；
+ *     Overtime=soft 必须同时给 Midpoint：soft 超时不报警，再缺阶段提示就完全没有任何反馈
+ *   - Midpoint ∈ (0,1) 开区间小数且 ≥ 0.5（过半之前的提示没有行动价值）；
+ *     TimeMedium ≥ 120s 必填、TimeMedium < 120s 必须留空（两分钟以内的阶段提示没有意义）
  *   - 行必须恰好 13 列
  */
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -267,8 +273,11 @@ function main() {
       return;
     }
     const overtimeVal = (overtime ?? '').trim();
-    if (overtimeVal && overtimeVal !== 'hard' && overtimeVal !== 'soft') {
-      err(lineNo, `Overtime 非法：${JSON.stringify(overtimeVal)}（须为 hard/soft/空）`);
+    if (overtimeVal !== 'hard' && overtimeVal !== 'soft') {
+      err(
+        lineNo,
+        `Overtime 非法：${JSON.stringify(overtimeVal)}（必填 hard/soft——留空等于这条食材没有任何超时反馈）`,
+      );
       return;
     }
     const midpointVal = (midpoint ?? '').trim();
@@ -282,10 +291,25 @@ function main() {
         err(lineNo, `Midpoint 非法：${JSON.stringify(midpointVal)}（须为 0~1 小数/空）`);
         return;
       }
+      if (Number(midpointVal) < 0.5) {
+        err(
+          lineNo,
+          `Midpoint=${midpointVal} 过早：阶段提示必须 ≥ 0.5（没过一半的提示没有行动价值）`,
+        );
+        return;
+      }
       midpointNum = Number(midpointVal);
     }
     if (overtimeVal === 'soft' && midpointNum === undefined) {
       err(lineNo, 'Overtime=soft 必须同时给 Midpoint（soft 超时不报警，缺阶段提示就完全没有反馈）');
+      return;
+    }
+    if (medium >= 120 && midpointNum === undefined) {
+      err(lineNo, `TimeMedium=${medium}s（≥2 分钟）必须给 Midpoint 阶段提示，否则中途没有任何提示`);
+      return;
+    }
+    if (medium < 120 && midpointNum !== undefined) {
+      err(lineNo, `TimeMedium=${medium}s（<2 分钟）不该给 Midpoint：两分钟以内的阶段提示没有意义`);
       return;
     }
     foods[id].push({

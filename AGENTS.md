@@ -18,8 +18,13 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - 数据源是 `data/food_catalog.csv`（13 列，规则见 `scripts/data-gen.mjs` 头部注释与其中的校验分支）。
 - 改完必须 `npm run data:gen`。`src/core/catalog.ts` 是**生成物**：禁止手改，也已被 `.prettierignore` 排除——
   格式化它会让 `npm run data:check` 判定「与 CSV 不同步」而挂掉 CI。
-- `Overtime=soft` 必须同时给 `Midpoint`（`data-gen` 会拦）：`soft` 超时不报警，再缺阶段提示就完全没有任何反馈。
-  `hard` 带 `midpoint` 允许——阶段提示与超时分级是两件独立的事。
+- `Overtime` **必填**（`hard` / `soft`，留空会被 `data-gen` 拦下）：`hard` = 多煮即老 → 超时满 10s 起红色脉冲；
+  `soft` = 多煮更入味/更软糯 → 超时不闪红。判 `hard` 的三条依据（2026-11-02 照这三条把 113/53 调成 136/30）：
+  ① `TimeMedium ≤ 90s`（短时涮烫，多煮即老）；② `RiskNote` 要求「务必全熟/煮透/断生」且 `TimeMedium ≤ 420s`
+  （安全类必须报警）；③ `CueWellDone` 本身就是口感劣化描述（发硬 / 变硬 / 发柴 / 发紧 / 橡皮 / 缩小 / 夹断 / 肉离骨）。
+- `Midpoint` 取值口径（`data-gen` 会拦）：`TimeMedium ≥ 120s` 必填——`≤240s` 用 `0.6`、更久煨用 `0.5`；
+  `< 120s` 必须留空（两分钟以内的阶段提示没有行动价值）；一律 ≥ 0.5。阶段提示是「该检查一下了」那条 toast，
+  与超时分级是两件独立的事。
 - 一次性迁移脚本 `scripts/add-cols.mjs` 已删：它内嵌 technique/overtime/midpoint 全量数据并直接写 CSV，
   是 CSV 之外的第二份数据，误跑会覆盖线上数据源而 `data:check` 仍然绿（生成物跟着它一起变，检查不出东西变了）。
   要翻历史：`git log --diff-filter=D --name-only`。以后加列直接在 CSV 上加、改 `data-gen.mjs`。
@@ -122,9 +127,8 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 
 ## 已知取舍（不是待修的 bug）
 
-- `overtime` 分布：113 项 `hard`（涮烫类，多煮即老 → 超时 10s 起红色脉冲）+ 53 项 `soft`
-  （凡标了 `midpoint` 的久煨类，多煮更入味 → 超时不闪红）。要改标前先想清楚视觉反馈：
-  `soft` 与未标注食材超时都不报警，只有 `hard` 报警。
+- `overtime` 分级与阶段提示的取值口径写在「食材数据」一节（166 项全部标注：136 `hard` / 30 `soft`，
+  114 项有 `midpoint`）。要改标前先想清楚视觉反馈：只有 `hard` 在超时满 10s 后红色脉冲。
 - 到点确认面板（`.done-banner`，固定底部）与计时卡片信息重复：功能上是逐条「知道了」，暂不重构。
 - `prefers-reduced-motion` 下，hard 超时的红色脉冲只剩**静态红字 + 发光**（不闪）。有意取舍：光敏优先，
   但报警不能整个降没——`tests/e2e/reminders.spec.ts` 里那条断言就是守这个（animation 关掉、红色仍在）。
