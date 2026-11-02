@@ -124,6 +124,11 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
   `import.meta.env.APP_VERSION`，见 `vite.config.ts`）、`public/manifest.webmanifest` 的 `version`（装机元信息）、
   `README.md` 的「更新记录」。`package-lock.json` 顶部的 `version` 用 `npm install --package-lock-only` 带上，别手改。
 - tag：`vX.Y.Z`，打在实际发布线上那一次 commit。
+- **tag 之后建 GitHub Release**，正文就是 README「更新记录」里那一版的内容，**不带资源文件**
+  （PWA 的产物在 Pages 上，Release 只是给人看的更新说明）：
+  `gh release create vX.Y.Z --repo Poro789/hotpot-timer --title "vX.Y.Z（YYYY-MM-DD）" --notes-file <正文文件>`。
+  tag 已存在时**不要**加 `--target`（传短 sha 会报 `HTTP 422: Release.target_commitish is invalid`）。
+  批量补建时最后再 `gh release edit <最新tag> --latest`，否则 Latest 会落在最后一个建的旧版本上。
 
 ## 已知取舍（不是待修的 bug）
 
