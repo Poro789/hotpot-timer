@@ -84,7 +84,7 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - 会发布的改动：先本地 commit，**经用户确认再 push**（tag 同理）。
 - 版本号同步处（三处，缺一处就是隐性 drift）：`package.json` 的 `version`（构建时注入页脚
   `import.meta.env.APP_VERSION`，见 `vite.config.ts`）、`public/manifest.webmanifest` 的 `version`（装机元信息）、
-  `README.md` 的「更新记录」。
+  `README.md` 的「更新记录」。`package-lock.json` 顶部的 `version` 用 `npm install --package-lock-only` 带上，别手改。
 - tag：`vX.Y.Z`，打在实际发布线上那一次 commit。
 
 ## 已知取舍（不是待修的 bug）
