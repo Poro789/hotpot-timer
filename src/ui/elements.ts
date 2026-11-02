@@ -12,6 +12,7 @@ export function collectElements() {
     pauseAllBtn: req<HTMLButtonElement>('pause-all-btn'),
     deleteAllBtn: req<HTMLButtonElement>('delete-all-btn'),
     foodGrid: req<HTMLDivElement>('food-grid'),
+    foodTabpanel: req<HTMLDivElement>('food-tabpanel'),
     categoryTabs: document.querySelector<HTMLElement>('.category-tabs')!,
     toast: req<HTMLDivElement>('toast'),
     flashOverlay: req<HTMLDivElement>('flash-overlay'),

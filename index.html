@@ -50,7 +50,7 @@
           <button id="pause-all-btn" class="btn btn-secondary" disabled>全部暂停</button>
           <button id="delete-all-btn" class="btn btn-danger" disabled>全部删除</button>
         </div>
-        <div class="timers-container" id="timers-container" aria-label="计时列表">
+        <div class="timers-container" id="timers-container" role="region" aria-label="计时列表">
           <!-- 计时器卡片将动态添加到这里 -->
           <div class="empty-state" id="empty-state">
             <p class="empty-pot" aria-hidden="true">🍲</p>
@@ -82,58 +82,111 @@
       <section class="food-section">
         <h2>🥘 选择食材</h2>
 
-        <!-- 分类标签 -->
+        <!-- 分类标签（完整 tab 模式：roving tabindex + 左右键切换，见 app.ts selectCategory） -->
         <div class="category-tabs" role="tablist" aria-label="食材分类">
-          <button class="tab-btn active" data-category="meat" role="tab" aria-selected="true">
+          <button
+            class="tab-btn active"
+            id="tab-meat"
+            data-category="meat"
+            role="tab"
+            aria-selected="true"
+            aria-controls="food-tabpanel"
+            tabindex="0"
+          >
             肉类
           </button>
-          <button class="tab-btn" data-category="seafood" role="tab" aria-selected="false">
+          <button
+            class="tab-btn"
+            id="tab-seafood"
+            data-category="seafood"
+            role="tab"
+            aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
+          >
             海鲜
           </button>
-          <button class="tab-btn" data-category="vegetable" role="tab" aria-selected="false">
+          <button
+            class="tab-btn"
+            id="tab-vegetable"
+            data-category="vegetable"
+            role="tab"
+            aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
+          >
             蔬菜
           </button>
-          <button class="tab-btn" data-category="bean" role="tab" aria-selected="false">
+          <button
+            class="tab-btn"
+            id="tab-bean"
+            data-category="bean"
+            role="tab"
+            aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
+          >
             豆制品
           </button>
-          <button class="tab-btn" data-category="ball" role="tab" aria-selected="false">
+          <button
+            class="tab-btn"
+            id="tab-ball"
+            data-category="ball"
+            role="tab"
+            aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
+          >
             丸类
           </button>
-          <button class="tab-btn" data-category="other" role="tab" aria-selected="false">
+          <button
+            class="tab-btn"
+            id="tab-other"
+            data-category="other"
+            role="tab"
+            aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
+          >
             其他
           </button>
           <button
             class="tab-btn tab-myfoods"
+            id="tab-myfoods"
             data-category="myfoods"
             role="tab"
             aria-selected="false"
+            aria-controls="food-tabpanel"
+            tabindex="-1"
           >
             ⭐ 我的食材
           </button>
         </div>
 
-        <!-- 自定义食材添加面板（仅"我的食材"标签页显示） -->
-        <div class="my-foods-panel" id="my-foods-panel">
-          <input
-            type="text"
-            id="custom-food-name"
-            placeholder="食材名称，如：鲜鸭血"
-            maxlength="20"
-          />
-          <div class="custom-time-chips" id="custom-time-chips">
-            <button class="time-chip" data-time="15">15秒</button>
-            <button class="time-chip" data-time="30">30秒</button>
-            <button class="time-chip" data-time="60">1分钟</button>
-            <button class="time-chip" data-time="120">2分钟</button>
-            <button class="time-chip" data-time="180">3分钟</button>
-            <button class="time-chip" data-time="300">5分钟</button>
+        <div class="food-tabpanel" id="food-tabpanel" role="tabpanel" aria-labelledby="tab-meat">
+          <!-- 自定义食材添加面板（仅"我的食材"标签页显示） -->
+          <div class="my-foods-panel" id="my-foods-panel">
+            <input
+              type="text"
+              id="custom-food-name"
+              placeholder="食材名称，如：鲜鸭血"
+              maxlength="20"
+            />
+            <div class="custom-time-chips" id="custom-time-chips">
+              <button class="time-chip" data-time="15">15秒</button>
+              <button class="time-chip" data-time="30">30秒</button>
+              <button class="time-chip" data-time="60">1分钟</button>
+              <button class="time-chip" data-time="120">2分钟</button>
+              <button class="time-chip" data-time="180">3分钟</button>
+              <button class="time-chip" data-time="300">5分钟</button>
+            </div>
+            <button class="btn-add-food" id="add-custom-food-btn">添加食材</button>
           </div>
-          <button class="btn-add-food" id="add-custom-food-btn">添加食材</button>
-        </div>
 
-        <!-- 食材列表 -->
-        <div class="food-grid" id="food-grid">
-          <!-- 食材卡片将通过JavaScript动态生成 -->
+          <!-- 食材列表 -->
+          <div class="food-grid" id="food-grid">
+            <!-- 食材卡片将通过JavaScript动态生成 -->
+          </div>
         </div>
       </section>
 

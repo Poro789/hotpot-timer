@@ -691,6 +691,38 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
+/* 按下卡里的按钮时，整张卡要有同样的按压反馈——:active 只落在真正被点的那个元素上 */
+.food-card:has(.food-add-btn:active),
+.food-card:has(.food-remove-btn:active) {
+  transform: scale(0.95);
+  background: var(--bg-card-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* 卡片唯一的可交互元素：外观仍由 .food-card 承担，按钮本身透明。
+   不用 all:unset——那会连 :focus-visible 的 outline 一起清掉。 */
+.food-add-btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 原来这两个是 div（块级），换成 span 后要保持排版 */
+.food-add-btn .food-name,
+.food-add-btn .food-time {
+  display: block;
+}
+
 .food-card.selected {
   border-color: rgba(var(--chili-red-rgb), 0.55);
   background:

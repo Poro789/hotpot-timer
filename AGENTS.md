@@ -73,6 +73,14 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - **对比度下限**：正文 ≥ 7:1、次级 ≥ 4.5:1（当前实测 14.34:1 / 6.62:1）。
   纯 `--chili-red` 只能用于描边、大字、发光，不能当小字文字色（仅 3.99:1）。
 - **动效与焦点**：任何新动效必须有 `prefers-reduced-motion` 降级；可交互元素必须有 `:focus-visible`。
+- **食材卡只有一个可交互元素**：`.food-card` 是普通容器，里面放真实的 `<button class="food-add-btn">`，
+  「我的食材」的 ✕ 删除按钮与它**同级**。别再做成 `div[role=button]` 里套按钮（读屏念不清），
+  也别用 `aria-pressed`——点一下是「再加一份」，不是开关。键盘 Enter/空格靠原生 button 触发，
+  **不要再叠一层 keydown**（一次按键会加两份）。`renderFoods` 重绘后把焦点还给同一张卡，
+  删了这条，键盘连加多份就得重新 Tab 回原位。
+- **分类标签是完整 tab 模式**：roving tabindex（整组只占一个 Tab 停靠点）+ 左右/Home/End 切换，
+  逻辑在 `app.ts` 的 `selectCategory` 与它的 keydown；`#food-tabpanel` 的 `aria-labelledby`
+  由 `render.updateCategoryTabs` 同步。加分类要在 `index.html` 加对应 `id="tab-xxx"`（面板指向它）。
 - **强调克制**：一屏只留一处主强调；不要「倾情呈现」这类口号式装饰文案（页脚已删）。
 - **emoji 当图标是有意取舍**（跨平台形状不一致，但零依赖、离线可用、与「市井」调性一致）——
   别顺手换成 icon font 或 SVG 图标集。

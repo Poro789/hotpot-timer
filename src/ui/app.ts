@@ -207,14 +207,33 @@ export function boot(): void {
   };
   render.attachFoodGrid();
 
-  // 分类标签
+  // 分类标签：点击与左右键走同一条路径（tablist 用 roving tabindex，整组只占一个 Tab 停靠点）
+  const selectCategory = (cat: CategoryTab): void => {
+    currentCategory = cat;
+    el.myFoodsPanel.style.display = cat === 'myfoods' ? 'flex' : 'none';
+    render.updateCategoryTabs(cat);
+    render.renderFoods(cat);
+  };
   el.categoryTabs.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.tab-btn');
     if (!btn?.dataset.category) return;
-    currentCategory = btn.dataset.category as CategoryTab;
-    el.myFoodsPanel.style.display = currentCategory === 'myfoods' ? 'flex' : 'none';
-    render.updateCategoryTabs(currentCategory);
-    render.renderFoods(currentCategory);
+    selectCategory(btn.dataset.category as CategoryTab);
+  });
+  el.categoryTabs.addEventListener('keydown', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.tab-btn');
+    if (!btn) return;
+    const tabs = [...el.categoryTabs.querySelectorAll<HTMLButtonElement>('.tab-btn')];
+    const i = tabs.indexOf(btn);
+    const last = tabs.length - 1;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = i === last ? 0 : i + 1;
+    else if (e.key === 'ArrowLeft') next = i === 0 ? last : i - 1;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = last;
+    if (next < 0) return;
+    e.preventDefault();
+    tabs[next]!.focus();
+    selectCategory(tabs[next]!.dataset.category as CategoryTab);
   });
 
   // "我的食材"面板

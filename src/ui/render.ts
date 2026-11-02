@@ -206,6 +206,14 @@ export class Render {
       counts.set(t.food.baseName, (counts.get(t.food.baseName) ?? 0) + 1);
     }
 
+    // 重绘会换掉所有可聚焦元素：先记住焦点落在哪张卡，重建后还回去
+    // （键盘连加多份时，不然每加一份都得重新 Tab 回原位）
+    const focused = document.activeElement as HTMLElement | null;
+    const keepFocus =
+      focused && this.el.foodGrid.contains(focused)
+        ? (focused.closest<HTMLElement>('.food-card')?.dataset.name ?? null)
+        : null;
+
     this.el.foodGrid.innerHTML = '';
 
     if (isMyFoods && foods.length === 0) {
@@ -219,21 +227,29 @@ export class Render {
     for (const food of foods) {
       const timeSec = 'time' in food ? food.time : food.timeSec;
       const count = counts.get(food.name) ?? 0;
+      const ms = timeSec * 1000;
       const card = document.createElement('div');
       card.className = 'food-card' + (isMyFoods ? ' food-card-custom' : '');
       card.dataset.name = food.name;
       card.dataset.time = String(timeSec);
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      if (count > 0) {
-        card.classList.add('selected');
-        card.setAttribute('aria-pressed', 'true');
-      }
+      if (count > 0) card.classList.add('selected');
+      // 卡片本身不再是可交互元素：里面只有一个「再加一份」按钮，
+      // 删除按钮与它同级（按钮套按钮读屏念不清，aria-pressed 也会把「加一份」说成开关）
+      const label =
+        `${food.name}，时长 ${formatMs(ms)}` +
+        (count > 1 ? `，已有 ${count} 份` : '') +
+        '，再加一份';
       card.innerHTML = `
-        ${count > 1 ? `<div class="food-count-badge">${count}</div>` : ''}
-        <div class="food-name">${escapeHtml(food.name)}</div>
-        <div class="food-time">时长: <span>${formatMs(timeSec * 1000)}</span></div>
-        ${isMyFoods ? '<button class="food-remove-btn" title="删除该食材" aria-label="删除该食材">✕</button>' : ''}
+        ${count > 1 ? `<div class="food-count-badge" aria-hidden="true">${count}</div>` : ''}
+        <button type="button" class="food-add-btn" aria-label="${escapeHtml(label)}">
+          <span class="food-name">${escapeHtml(food.name)}</span>
+          <span class="food-time">时长: <span>${formatMs(ms)}</span></span>
+        </button>
+        ${
+          isMyFoods
+            ? `<button class="food-remove-btn" title="删除该食材" aria-label="${escapeHtml(`删除 ${food.name}`)}">✕</button>`
+            : ''
+        }
       `;
       if (isMyFoods) {
         card
@@ -245,6 +261,13 @@ export class Render {
       }
       this.el.foodGrid.appendChild(card);
     }
+
+    if (keepFocus) {
+      const again = this.el.foodGrid.querySelector<HTMLElement>(
+        `.food-card[data-name="${CSS.escape(keepFocus)}"] .food-add-btn`,
+      );
+      again?.focus();
+    }
   }
 
   /** 由 app 注入：点卡片=开计时（目录食材默认适中档）；✕=从库中移除 */
@@ -252,21 +275,16 @@ export class Render {
   onPickFood: ((name: string, timeSec: number, desc: string, custom: boolean) => void) | null =
     null;
 
-  /** 食物网格统一事件委托（含键盘可达性） */
+  /**
+   * 食物网格统一事件委托。键盘不用自己接：卡里是真实 <button>，Enter/空格原生触发 click，
+   * 再叠一层 keydown 会让一次按键加两份。
+   */
   attachFoodGrid(): void {
     this.el.foodGrid.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (target.closest('.food-remove-btn')) return;
       const card = target.closest<HTMLElement>('.food-card');
       if (!card) return;
-      this.pickFromCard(card);
-    });
-    this.el.foodGrid.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      const target = e.target as HTMLElement;
-      const card = target.closest<HTMLElement>('.food-card');
-      if (!card) return;
-      e.preventDefault();
       this.pickFromCard(card);
     });
   }
@@ -281,10 +299,16 @@ export class Render {
     this.onPickFood(name, time, descEl?.textContent ?? '', isCustom);
   }
 
+  /** 选中标签：样式 + ARIA 状态 + roving tabindex + 面板指向，一次改齐 */
   updateCategoryTabs(active: CategoryTab): void {
     this.el.categoryTabs.querySelectorAll<HTMLElement>('.tab-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.category === active);
+      const on = btn.dataset.category === active;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', String(on));
+      // 整组只占一个 Tab 停靠点，组内靠左右键走（app.ts 的 keydown）
+      btn.tabIndex = on ? 0 : -1;
     });
+    this.el.foodTabpanel.setAttribute('aria-labelledby', `tab-${active}`);
   }
 }
 
