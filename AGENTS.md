@@ -18,6 +18,21 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - 数据源是 `data/food_catalog.csv`（13 列，规则见 `scripts/data-gen.mjs` 头部注释与其中的校验分支）。
 - 改完必须 `npm run data:gen`。`src/core/catalog.ts` 是**生成物**：禁止手改，也已被 `.prettierignore` 排除——
   格式化它会让 `npm run data:check` 判定「与 CSV 不同步」而挂掉 CI。
+- `Overtime=soft` 必须同时给 `Midpoint`（`data-gen` 会拦）：`soft` 超时不报警，再缺阶段提示就完全没有任何反馈。
+  `hard` 带 `midpoint` 允许——阶段提示与超时分级是两件独立的事。
+- 一次性迁移脚本 `scripts/add-cols.mjs` 已删：它内嵌 technique/overtime/midpoint 全量数据并直接写 CSV，
+  是 CSV 之外的第二份数据，误跑会覆盖线上数据源而 `data:check` 仍然绿（生成物跟着它一起变，检查不出东西变了）。
+  要翻历史：`git log --diff-filter=D --name-only`。以后加列直接在 CSV 上加、改 `data-gen.mjs`。
+
+## 状态只有一个入口：Store
+
+- 任何状态变更走 `src/core/store.ts` 的意图方法（`addTimer` / `pauseTimer` / `applyTick` / `deleteTimer` …），
+  它们统一 `commit()` 通知订阅者。**渲染层不得直接改 `store.snapshot` 里的对象**——每帧推进计时也走
+  `store.applyTick(ts)`。绕过 commit 的后果：到点不置顶（`structureVersion` 不动）、不存盘、后台不重新武装、亮屏锁不释放。
+- `render.ts` 里的 `forceRebuildTimers()` 逃生门已删：需要重绘的状态变化只能由 Store 触发，别加回来。
+- 完成告警队列（`src/core/alarm.ts` 的 `AlarmState.queue`）有意留在 Store 之外（它不是持久状态），
+  靠 `AlarmController` 订阅 commit 调 `pruneQueue` 与计时列表对账。新增「会删条目」的入口不用改它，
+  但别删那个对账订阅——删了会出现「卡片已删、确认面板留一行空名字」，且循环提醒继续响。
 
 ## 时间语义（别顺手「优化」掉）
 
@@ -36,6 +51,9 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - 新行为先写**会红**的测试再实现；红-green 验证时临时改坏的源码要**全部**还原——
   `false &&` 这类改动会被 eslint `no-constant-condition` 抓到，正好用来查漏还原。
 - `playwright.config.ts` 里 `retries: 1` 会掩盖 flake：一条测试偶发红，按真失败处理，别当噪声。
+- `tests/unit/sw-precache.test.ts` 卡住离线清单：`public/` 下每个文件（`sw.js` 本身除外）必须在 `PRECACHE` 里，
+  manifest 图标与 `index.html` 引用的本地资源也一样。少一项不是报错，是「在线好用、离线缺件」
+  （`timer-worker.js` 缺了后台到点提醒会静默失效）。别为了让测试过而从清单里删文件。
 
 ## 设计规矩（深夜炭火 · 市井火锅风）
 
@@ -58,8 +76,9 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 ## 发布
 
 - 会发布的改动：先本地 commit，**经用户确认再 push**（tag 同理）。
-- 版本号同步处：`package.json` 的 `version`（构建时注入页脚 `import.meta.env.APP_VERSION`，见 `vite.config.ts`）
-  与 `README.md` 的「更新记录」。
+- 版本号同步处（三处，缺一处就是隐性 drift）：`package.json` 的 `version`（构建时注入页脚
+  `import.meta.env.APP_VERSION`，见 `vite.config.ts`）、`public/manifest.webmanifest` 的 `version`（装机元信息）、
+  `README.md` 的「更新记录」。
 - tag：`vX.Y.Z`，打在实际发布线上那一次 commit。
 
 ## 已知取舍（不是待修的 bug）

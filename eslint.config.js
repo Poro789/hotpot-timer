@@ -6,7 +6,6 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
-      'public/**',
       '.design-test/**',
       'test-results/**',
       'playwright-report/**',
@@ -28,6 +27,24 @@ export default tseslint.config(
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: { Buffer: 'readonly', console: 'readonly', process: 'readonly', URL: 'readonly' },
+    },
+  },
+  {
+    // public/ 下的 SW 与 Worker：以前整目录被 ignore，等于这两份关键代码零门禁
+    files: ['public/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        clients: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        console: 'readonly',
+      },
     },
   },
 );

@@ -5,21 +5,28 @@
  *   node scripts/data-gen.mjs          # 重新生成 catalog.ts
  *   node scripts/data-gen.mjs --check  # 仅校验：CSV 合法且与 catalog.ts 一致（CI 卡点）
  *
- * CSV schema v2（首行表头，带 BOM 容忍，字段可带双引号）：
- *   Name,Category,TimeRare,TimeMedium,TimeWellDone,CueRare,CueMedium,CueWellDone,RiskNote,ServingTip
+ * CSV schema v2（首行表头，带 BOM 容忍，字段可带双引号；共 13 列）：
+ *   Name,Category,TimeRare,TimeMedium,TimeWellDone,CueRare,CueMedium,CueWellDone,RiskNote,ServingTip,Technique,Overtime,Midpoint
  *
  *   三档时长（秒）：红绿灯 = 偏生(绿) / 适中(黄) / 偏熟(红)
  *   三档判据：每档"用眼睛确认"的熟成线索（颜色/形态/浮起）
  *   RiskNote：偏生档的安全提示（空 = 偏生无额外风险）
  *   ServingTip：通用熟度提示（旧列，保留）
+ *   Technique：手法提示（卡片上的「手法」行）
+ *   Overtime：超时分级，hard / soft / 空。只有 hard 会在超时满 10s 后红色脉冲
+ *     （见 src/core/time.ts 的 shouldPulseOvertime）；soft 与空都不报警。
+ *   Midpoint：阶段提示比例，(0,1) 开区间小数；elapsed 到 total*midpoint 时提示检查一次。
  *
  * 校验规则：
- *   - 表头必须恰好为上述 10 列
+ *   - 表头必须恰好为上述 13 列
  *   - Name 非空且全局唯一（含 emoji 前缀）
  *   - Category 属于：肉类/海鲜类/蔬菜类/豆制品类/丸滑类/经典火锅菜
  *   - 三档时长均为正整数（秒），且严格递增：Rare < Medium < WellDone
  *   - 三档判据均非空（红绿灯必须给出可目视确认的判据）
- *   - 行必须恰好 10 列
+ *   - Overtime ∈ {hard, soft, 空}；Midpoint ∈ (0,1) 开区间小数或空
+ *   - Overtime=soft 必须同时给 Midpoint：soft 超时不报警，再缺阶段提示就完全没有任何反馈
+ *     （hard 带 Midpoint 是允许的阶段提示，两者语义独立）
+ *   - 行必须恰好 13 列
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -276,6 +283,10 @@ function main() {
         return;
       }
       midpointNum = Number(midpointVal);
+    }
+    if (overtimeVal === 'soft' && midpointNum === undefined) {
+      err(lineNo, 'Overtime=soft 必须同时给 Midpoint（soft 超时不报警，缺阶段提示就完全没有反馈）');
+      return;
     }
     foods[id].push({
       name: n,
