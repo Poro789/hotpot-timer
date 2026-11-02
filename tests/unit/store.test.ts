@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Store, defaultState, displayOrder, nextDisplayName } from '../../src/core/store';
+import { Store, defaultState, displayOrder, timerDisplayName } from '../../src/core/store';
 import type { TimeSource } from '../../src/core/time';
 import type { Timer } from '../../src/core/types';
 
@@ -40,31 +40,31 @@ function timerWith(baseName: string, name: string, over: Partial<Timer> = {}): T
   };
 }
 
-describe('nextDisplayName（派生计数，修复旧版计数器不清减 bug）', () => {
-  it('列表为空时不带后缀', () => {
-    expect(nextDisplayName([], '毛肚')).toBe('毛肚');
+describe('timerDisplayName（份数实时派生，不烘进状态）', () => {
+  it('单份不带后缀', () => {
+    const store = new Store(defaultState());
+    const a = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    expect(timerDisplayName(store.snapshot.timers, a)).toBe('毛肚');
   });
-  it('已有同 baseName 条目时递增', () => {
-    const timers = [timerWith('毛肚', '毛肚')];
-    expect(nextDisplayName(timers, '毛肚')).toBe('毛肚x2');
-  });
-  it('删除后自动回退（不再残留 x3）', () => {
+  it('两份时两张卡片显示同一个读数（不是一份标一份不标）', () => {
     const store = new Store(defaultState());
     const a = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
     const b = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    expect(b.food.name).toBe('毛肚x2');
-    store.removeTimer(a.id);
-    const c = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    // 列表里只剩 b（1 份），新的一份是 x2
-    expect(c.food.name).toBe('毛肚x2');
+    expect(timerDisplayName(store.snapshot.timers, a)).toBe('毛肚x2');
+    expect(timerDisplayName(store.snapshot.timers, b)).toBe('毛肚x2');
   });
-  it('全部删除后回到无后缀', () => {
+  it('删掉一份后剩下的那份立刻回退（旧实现把 x2 烘进状态，删完还挂着过期标签）', () => {
     const store = new Store(defaultState());
-    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    store.deleteAllTimers();
-    const c = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
-    expect(c.food.name).toBe('毛肚');
+    const a = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    const b = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    store.removeTimer(a.id);
+    expect(timerDisplayName(store.snapshot.timers, b)).toBe('毛肚');
+  });
+  it('状态里不存后缀：food.name 就是 baseName', () => {
+    const store = new Store(defaultState());
+    const b = store.addFoodTimer({ name: '毛肚', timeSec: 15, desc: '' }, ts);
+    expect(b.food.baseName).toBe('毛肚');
+    expect(b.food.name).toBe(b.food.baseName);
   });
 });
 
@@ -114,7 +114,9 @@ describe('addQuickTimer（快速计时）', () => {
     store.addQuickTimer('鲜鸭血', 60, ts);
     store.addQuickTimer('鲜鸭血', 120, ts);
     expect(store.snapshot.timers).toHaveLength(2);
-    expect(store.snapshot.timers[1]!.food.name).toBe('鲜鸭血x2');
+    // 名字本身不带后缀，x2 只在显示时按 baseName 派生
+    expect(store.snapshot.timers.map((t) => t.food.name)).toEqual(['鲜鸭血', '鲜鸭血']);
+    expect(timerDisplayName(store.snapshot.timers, store.snapshot.timers[1]!)).toBe('鲜鸭血x2');
   });
 });
 

@@ -1,4 +1,4 @@
-import { displayOrder, type Store } from '../core/store';
+import { displayOrder, timerDisplayName, type Store } from '../core/store';
 import {
   DONENESS_STATUS_LABELS,
   deriveDonenessStatus,
@@ -78,7 +78,7 @@ export class Render {
         : `<div class="timer-desc">${escapeHtml(t.food.desc || '')}</div>`;
     card.innerHTML = `
         <div class="timer-card-header">
-            <h3 class="timer-food-name">${escapeHtml(t.food.name)}</h3>
+            <h3 class="timer-food-name">${escapeHtml(timerDisplayName(this.store.snapshot.timers, t))}</h3>
         </div>
         <div class="timer-card-body">
             <div class="timer-info">

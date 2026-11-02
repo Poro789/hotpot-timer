@@ -34,7 +34,6 @@ export interface NewFood {
 function makeTimer(
   id: number,
   baseName: string,
-  displayName: string,
   timeSec: number,
   desc: string,
   custom?: boolean,
@@ -49,7 +48,7 @@ function makeTimer(
     id,
     food: {
       baseName,
-      name: displayName,
+      name: baseName,
       totalMs: timeSec * 1000,
       desc,
       custom,
@@ -68,10 +67,16 @@ function makeTimer(
   };
 }
 
-/** 显示名称：同一 baseName 在列表中有 N-1 份时，新的一份命名为 xN（纯派生，删除后自动回退） */
-export function nextDisplayName(timers: readonly Timer[], baseName: string): string {
-  const count = timers.filter((t) => t.food.baseName === baseName).length + 1;
-  return count > 1 ? `${baseName}x${count}` : baseName;
+/**
+ * 显示名称：同一 baseName 在当前列表里有 N 份时显示 xN。
+ * **每次显示都从计时列表实时派生**——份数只有一个来源（列表本身）。
+ * 旧实现把 xN 烘进 timer.food.name 存起来，删掉中间那份后，剩下的卡片还挂着「毛肚x2」的过期标签。
+ * 分组口径与食材卡片上的份数角标（render.ts）一致：按 baseName。
+ */
+export function timerDisplayName(timers: readonly Timer[], timer: Timer): string {
+  const base = timer.food.baseName;
+  const count = timers.filter((t) => t.food.baseName === base).length;
+  return count > 1 ? `${base}x${count}` : base;
 }
 
 /**
@@ -129,7 +134,6 @@ export class Store {
     const timer = makeTimer(
       this.state.nextTimerId++,
       food.name,
-      nextDisplayName(this.state.timers, food.name),
       food.timeSec,
       food.desc,
       food.custom,
@@ -171,14 +175,7 @@ export class Store {
     }
 
     const timeDesc = seconds < 60 ? `${seconds}秒` : `${Math.floor(seconds / 60)}分钟`;
-    const timer = makeTimer(
-      this.state.nextTimerId++,
-      name,
-      nextDisplayName(this.state.timers, name),
-      seconds,
-      `自定义时长${timeDesc}`,
-      true,
-    );
+    const timer = makeTimer(this.state.nextTimerId++, name, seconds, `自定义时长${timeDesc}`, true);
     this.state.timers.push(timer);
     startTimer(timer, ts);
     this.commit(true);

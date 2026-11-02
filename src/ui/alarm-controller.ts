@@ -1,4 +1,4 @@
-import type { Store } from '../core/store';
+import { timerDisplayName, type Store } from '../core/store';
 import {
   ALARM_LOOP_MS,
   NO_ALARM,
@@ -58,7 +58,7 @@ export class AlarmController {
     const wasActive = this.state.active;
     for (const id of ids) {
       const t = this.deps.store.getTimer(id);
-      const name = t?.food.name ?? '';
+      const name = t ? timerDisplayName(this.deps.store.snapshot.timers, t) : '';
       this.state = enqueueDone(this.state, id, wallNow);
       if (opts.announce) this.deps.announce(`${name} 时间到！`);
     }
