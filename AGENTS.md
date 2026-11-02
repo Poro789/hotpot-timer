@@ -36,6 +36,10 @@ npm run lint && npm run format:check && npm run typecheck && npm run data:check 
 - **份数（`xN`）只有一个来源：计时列表本身**。显示名由 `core/store.ts` 的 `timerDisplayName()` 在每次渲染时
   按 `baseName` 实时派生（与食材卡角标同一口径）。别把 `xN` 写回 `timer.food.name` 存起来——旧做法删掉一份后，
   剩下的卡片还挂着「毛肚x2」的过期标签，且与角标读数对不上（`tests/e2e/timer.spec.ts` 那条断言就是守这个）。
+- **命名机制只有一套**：快速计时的默认名 `自定义食材N` 由 `store.nextQuickDefaultName()` 从当前计时列表的
+  `自定义食材(\d+)` 后缀推导 max+1。以前另有一个持久化的 `customFoodCounter`（已从 `AppState` / `PersistedState` 删掉，
+  旧存档里那个字段被忽略）——它要求「删条目 / 清空列表」都记得重置，漏了就出现「列表空了但编号到 7」，
+  而且「打开弹层就自增」，取消也跳号。别加回计数器。
 - **只有发起方写盘**：`app.ts` 的 `watchExternalChanges` 在把别的标签页的状态水合进来时置 `applyingRemote`，
   订阅里据此跳过 `saveState`。删掉这个标记不会当场坏，但每次远程改动会在每个标签页多出几轮
   「storage 事件 → 水合 → 全量重建 → 写盘」（实测回环 4 次事件才靠「内容相同不触发事件」收敛）。

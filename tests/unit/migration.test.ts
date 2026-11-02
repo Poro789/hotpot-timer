@@ -77,7 +77,8 @@ describe('migrate（持久化迁移链）', () => {
 
     expect(s!.myFoods).toEqual([{ name: '鲜鸭血', timeSec: 90 }]);
     expect(s!.nextTimerId).toBe(5);
-    expect(s!.customFoodCounter).toBe(2);
+    // customFoodCounter 也一并丢掉：快速计时的默认名改为从计时列表推导（只有一套命名机制）
+    expect('customFoodCounter' in s!).toBe(false);
     expect(s!.settings).toEqual(DEFAULT_SETTINGS);
   });
 
@@ -117,7 +118,7 @@ describe('migrate（持久化迁移链）', () => {
     expect(s!.timers).toEqual([]);
     expect(s!.myFoods).toEqual([]);
     expect(s!.nextTimerId).toBe(1);
-    expect(s!.customFoodCounter).toBe(1);
+    expect('customFoodCounter' in s!).toBe(false);
   });
 
   it('nextTimerId 缺失时取最大 id + 1（不与现有 id 碰撞）', () => {

@@ -67,7 +67,6 @@ function sanitizeV3(o: Record<string, unknown>): PersistedState | null {
       typeof o.nextTimerId === 'number'
         ? o.nextTimerId
         : (timers.length > 0 ? Math.max(...timers.map((t) => t.id)) : 0) + 1,
-    customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
   };
 }
 
@@ -152,7 +151,6 @@ function migrateV2(o: Record<string, unknown>): PersistedState {
       typeof o.nextTimerId === 'number'
         ? o.nextTimerId
         : (timers.length > 0 ? Math.max(...timers.map((t) => t.id)) : 0) + 1,
-    customFoodCounter: typeof o.customFoodCounter === 'number' ? o.customFoodCounter : 1,
   };
 }
 
@@ -196,7 +194,6 @@ export function loadState(): AppState {
     myFoods: persisted.myFoods,
     settings: { ...DEFAULT_SETTINGS, ...persisted.settings },
     nextTimerId: persisted.nextTimerId,
-    customFoodCounter: persisted.customFoodCounter,
   };
   if (missed.length > 0) {
     // 标记已在 settleOnLoad 内完成；此处仅为语义清晰
@@ -212,7 +209,6 @@ export async function saveState(state: AppState): Promise<void> {
     myFoods: state.myFoods,
     settings: state.settings,
     nextTimerId: state.nextTimerId,
-    customFoodCounter: state.customFoodCounter,
   };
   const write = (): void => {
     try {
@@ -245,7 +241,6 @@ export function watchExternalChanges(onChange: (state: AppState) => void): () =>
         myFoods: persisted.myFoods,
         settings: { ...DEFAULT_SETTINGS, ...persisted.settings },
         nextTimerId: persisted.nextTimerId,
-        customFoodCounter: persisted.customFoodCounter,
       });
     } catch {
       /* 忽略瞬时损坏 */

@@ -58,7 +58,6 @@ export async function seedState(
           myFoods: data.myFoods,
           settings: data.settings,
           nextTimerId: data.nextTimerId,
-          customFoodCounter: 1,
         }),
       );
     },

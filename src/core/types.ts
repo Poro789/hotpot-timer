@@ -95,8 +95,6 @@ export interface AppState {
   myFoods: MyFood[];
   settings: Settings;
   nextTimerId: number;
-  /** 快速计时默认名「自定义食材N」的编号 */
-  customFoodCounter: number;
 }
 
 /** 告警会话：完成队列 + 循环提醒状态（纯数据，供 AlarmController 使用） */
@@ -125,5 +123,5 @@ export interface PersistedState {
   myFoods: MyFood[];
   settings: Settings;
   nextTimerId: number;
-  customFoodCounter: number;
+  // 注：早期 v3 存档里可能带 customFoodCounter——不读它，默认名从计时列表推导
 }

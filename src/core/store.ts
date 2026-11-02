@@ -11,6 +11,10 @@ import { pauseTimer, startTimer, tickTimers, type TimeSource } from './time';
 
 type Listener = () => void;
 
+/** 快速计时的默认名前缀与「自定义食材N」解析式（默认名从计时列表推导，见 nextQuickDefaultName） */
+const QUICK_DEFAULT_PREFIX = '自定义食材';
+const QUICK_NAME_RE = /^自定义食材(\d+)$/;
+
 export interface NewFood {
   /** 原始名称（不带 xN 后缀）：份数统计与去重的键 */
   name: string;
@@ -209,7 +213,6 @@ export class Store {
   deleteAllTimers(): void {
     if (this.state.timers.length === 0) return;
     this.state.timers = [];
-    this.state.customFoodCounter = 1;
     this.commit(true);
   }
 
@@ -256,11 +259,20 @@ export class Store {
 
   // ---------- 快速计时默认名 ----------
 
-  /** 取下一个默认名并递增编号（打开弹层时调用，取消也会消耗编号——与旧版一致） */
+  /**
+   * 下一个默认名：从当前列表里已有的「自定义食材N」推导 max+1。
+   * **命名机制只有这一套**——旧实现另有一个持久化的 `customFoodCounter`，
+   * 删条目/清空列表都得记得重置它，漏了就出现「列表里一份不剩、编号却到 7」；
+   * 而且它「打开弹层就自增」，取消也消耗编号。旧存档里那个字段现在没人读，直接忽略。
+   */
   nextQuickDefaultName(): string {
-    const name = `自定义食材${this.state.customFoodCounter}`;
-    this.state.customFoodCounter += 1;
-    return name;
+    let max = 0;
+    for (const t of this.state.timers) {
+      if (!t.food.custom) continue;
+      const n = Number(QUICK_NAME_RE.exec(t.food.baseName)?.[1] ?? 0);
+      if (n > max) max = n;
+    }
+    return `${QUICK_DEFAULT_PREFIX}${max + 1}`;
   }
 
   // ---------- 外部水合（跨标签页同步） ----------
@@ -277,7 +289,6 @@ export function defaultState(): AppState {
     myFoods: [],
     settings: { ...DEFAULT_SETTINGS },
     nextTimerId: 1,
-    customFoodCounter: 1,
   };
 }
 

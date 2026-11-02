@@ -307,6 +307,35 @@ describe('displayOrder（到点条目置顶）', () => {
   });
 });
 
+describe('快速计时默认名（只有一个命名机制：从计时列表推导）', () => {
+  it('空列表给「自定义食材1」；连续调用不消耗编号（取消后重开还是同一个名字）', () => {
+    const store = new Store(defaultState());
+    expect(store.nextQuickDefaultName()).toBe('自定义食材1');
+    expect(store.nextQuickDefaultName()).toBe('自定义食材1');
+  });
+
+  it('已有「自定义食材3」时给 4；清空列表后回到 1', () => {
+    const store = new Store(defaultState());
+    store.addQuickTimer('自定义食材3', 60, ts);
+    expect(store.nextQuickDefaultName()).toBe('自定义食材4');
+    store.deleteAllTimers();
+    expect(store.nextQuickDefaultName()).toBe('自定义食材1');
+  });
+
+  it('非编号的自定义名不参与推导（用户改名成「牛肉」不会污染编号）', () => {
+    const store = new Store(defaultState());
+    store.addQuickTimer('牛肉', 30, ts);
+    expect(store.nextQuickDefaultName()).toBe('自定义食材1');
+  });
+
+  it('状态里没有 customFoodCounter：命名机制只有一套', () => {
+    expect('customFoodCounter' in defaultState()).toBe(false);
+    const store = new Store(defaultState());
+    store.addQuickTimer('自定义食材1', 30, ts);
+    expect('customFoodCounter' in store.snapshot).toBe(false);
+  });
+});
+
 describe('missed 标记生命周期', () => {
   it('补报的完成条目"加一份"后清除 missed', () => {
     const store = new Store(defaultState());
