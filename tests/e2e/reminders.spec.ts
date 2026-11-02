@@ -89,6 +89,39 @@ test.describe('到点提醒增强（手法 / 超时分级 / 阶段提示 / 合�
     await expect(time).toHaveText(/^\+1[1-9](\.\d)?秒$/);
   });
 
+  test('hard 超时 + prefers-reduced-motion：取消脉冲，但红字报警必须留着', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await seed(page, [
+      {
+        id: 1,
+        food: {
+          baseName: '毛肚',
+          name: '毛肚',
+          totalMs: 15_000,
+          desc: '七上八下，口感脆',
+          overtime: 'hard',
+        },
+        remainingMs: 0,
+        state: 'running',
+        endAt: Date.now() - 11_000,
+        missed: false,
+      },
+    ]);
+    await page.goto('/');
+    const time = page.locator('.timer-card[data-timer-id="1"] .timer-time');
+    await expect(time).toHaveClass(/overtime-hard/);
+    const style = await time.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { animationName: cs.animationName, color: cs.color };
+    });
+    // 降级：不闪（光敏/晕动症）
+    expect(style.animationName).toBe('none');
+    // 但报警不能整个消失：降级后必须还是红色（红通道明显压过绿蓝）
+    const [r = 0, g = 0, b = 0] = style.color.match(/\d+/g)!.map(Number);
+    expect(r).toBeGreaterThan(g + 40);
+    expect(r).toBeGreaterThan(b + 40);
+  });
+
   test('soft 类与自定义食材：超时再久也不脉冲', async ({ page }) => {
     await seed(page, [
       {

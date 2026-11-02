@@ -102,6 +102,13 @@ body {
   border: 0;
 }
 
+[hidden] {
+  /* 契约：hidden 属性就是「不显示」，不靠每个组件自己补一条 display:none。
+     之前只有三处组件各写了这条，漏写的（.done-banner）只能靠浏览器默认值撑着。
+     !important 用来压过后置的 display 声明（如 .quick-name-overlay.open）。 */
+  display: none !important;
+}
+
 :focus-visible {
   outline: 2px solid var(--flame-orange);
   outline-offset: 2px;
@@ -959,11 +966,6 @@ body {
   transition: opacity 0.2s ease;
 }
 
-/* hidden 属性默认 display:none，显式声明避免被覆盖 */
-.quick-name-overlay[hidden] {
-  display: none;
-}
-
 .quick-name-overlay.open {
   opacity: 1;
 }
@@ -1071,10 +1073,6 @@ body {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
 }
 
-.install-banner[hidden] {
-  display: none;
-}
-
 .install-banner-actions {
   display: flex;
   gap: 8px;
@@ -1094,10 +1092,6 @@ body {
   border-radius: 12px;
   padding: 10px 14px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-}
-
-.update-banner[hidden] {
-  display: none;
 }
 
 .update-banner .btn-small {
@@ -1145,8 +1139,10 @@ body {
 .footer-version {
   font-size: var(--fs-xs);
   letter-spacing: 1px;
+  /* 不要再往下压暗：--text-secondary 直接落在 --bg-deep 上是 6.62:1，
+     以前这里叠了 opacity:.55，实测只有 3.14:1，破了下限（次级 ≥4.5:1）。
+     想更淡只能换更深的色板 token，不能用透明度绕过色板。 */
   color: var(--text-secondary);
-  opacity: 0.55;
 }
 
 /* ============ 响应式 ============ */
@@ -1200,6 +1196,11 @@ body {
   .flash-overlay.flashing {
     animation: none;
     opacity: 0.4; /* 单次柔和提示，不闪烁 */
+  }
+
+  /* 超时红色脉冲：不闪，但红字与发光必须保留——降级不能把报警本身降没 */
+  .timer-time.overtime-hard {
+    animation: none;
   }
 
   .done-banner {
